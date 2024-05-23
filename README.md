@@ -2,6 +2,7 @@
 ### Progetto di Sistemi Operativi
 A cura di Lorenzo Franceschelli e Gabriele Monti
 
+![cinema](https://github.com/Lorenx03/Sistema-di-prenotazione-posti/assets/48184667/be6e5aa3-5400-497f-b970-6e26e4c9c9e4)
 ---
 
 ## Sistema di prenotazione posti
