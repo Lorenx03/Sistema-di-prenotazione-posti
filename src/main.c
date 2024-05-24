@@ -21,6 +21,7 @@ int main(){
 	append_node(&head, create_node(6));
 	prepend_node(&head, create_node(10));
 	append_node(&head, create_node(7));
+	printf("Hello");
 
 	remove_node(&head, nodeToElimin);
 
