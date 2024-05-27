@@ -1,2 +1,5 @@
 main
 .DS_STORE
+
+#ignore all the .o files
+*.o
