@@ -77,6 +77,7 @@ void drawFilledRettangle(TuiDisplayBuffer *displayBuff, int start_x, int start_y
 void drawHollowRettangle(TuiDisplayBuffer *displayBuff, int start_x, int start_y, int end_x, int end_y, char ch1 , char ch2, Style *style1, Style *style2);
 void drawFilledCircle(TuiDisplayBuffer *displayBuff, int x, int y, int radius, char ch, Style *style);
 //void drawHollowCircle(TuiDisplayBuffer *displayBuff, int x, int y, int radius, char ch, Style *style);
+void drawBigText(TuiDisplayBuffer *displayBuff, int x, int y, const char *text, char ch, short spacing, int xMultiplier, int yMultiplier, Style *style);
 void drawLine(TuiDisplayBuffer *displayBuff, int x1, int y1, int x2, int y2, char ch, Style *style);
 void drawBuffer(TuiDisplayBuffer *displayBuff);
 void handle_sigint(int sig);

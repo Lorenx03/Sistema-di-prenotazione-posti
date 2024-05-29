@@ -8,23 +8,22 @@
 
 int main() {
     TuiDisplayBuffer *displayBuff = createTuiDisplayBuffer();
-    Style *style = createStyle(GREEN, BG_BLACK, 1, false, false, false);
+    Style *style = createStyle(GREEN, BG_GREEN, 1, false, false, false);
 	enableRawMode();
 
-	char text[] = "Hello, World!";
+	// char text[] = "Hello, World!";
 	int rows, cols;
     getWindowSize(&rows, &cols);
-    int len = strlen(text);
-    int x = (cols - len) / 2;
-    int y = rows / 2;
+    // int len = strlen(text);
+    // int x = (cols - len) / 2;
+    // int y = rows / 2;
 
-    drawText(displayBuff, x, y, text, style);
+    //drawText(displayBuff, x, y, text, style);
 
     //print display dimensions using drawText
     char dimensions[100];
     sprintf(dimensions, "Rows: %d, Cols: %d", rows, cols);
-    drawText(displayBuff, 0, 0, dimensions, style);
-
+    drawBigText(displayBuff, 10, 10, "cinema", ' ', 1, 2, 1, style);
 	drawBuffer(displayBuff);
 
 	signal(SIGINT, handle_sigint);
@@ -34,5 +33,3 @@ int main() {
 
     return 0;
 }
-
-

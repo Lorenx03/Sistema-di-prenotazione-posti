@@ -3,3 +3,4 @@ main
 
 #ignore all the .o files
 *.o
+program

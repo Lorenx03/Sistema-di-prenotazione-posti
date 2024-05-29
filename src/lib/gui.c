@@ -8,6 +8,8 @@
 #include <signal.h>
 #include <math.h>
 
+#include "alphabet.h"
+
 // Define ANSI escape codes for basic colors
 const char *colors[] = {
     "\x1b[30m", // Black
@@ -342,6 +344,63 @@ void drawLine(TuiDisplayBuffer *displayBuff, int x1, int y1, int x2, int y2, cha
             err += dx;
             y1 += sy;
         }
+    }
+}
+
+
+enum alphabetChars letterToIndex(char letter){
+    if (letter >= 'a' && letter <= 'z'){
+        return letter - 'a';
+    } else if (letter >= 'A' && letter <= 'Z'){
+        return letter - 'A';
+    } else {
+        return -1;
+    }
+}
+
+
+void drawBigText(TuiDisplayBuffer *displayBuff, int x, int y, const char *text, char ch, short spacing, int xMultiplier, int yMultiplier, Style *style){
+    int len = strlen(text);
+    int totalWidth = 0;
+    int totalHeight = 5 * yMultiplier;
+
+    if(xMultiplier < 1 || yMultiplier < 1){
+        fprintf(stderr, "Invalid multipliers\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int index = 0;
+    for (int i = 0; i < len; i++) {
+        index = letterToIndex(text[i]);
+        if (index == -1){
+            fprintf(stderr, "Invalid character\n");
+            exit(EXIT_FAILURE);
+        }
+
+        totalWidth += alphabet[index].width * xMultiplier + spacing;
+    }
+
+    if (x < 0 || y < 0 || x + totalWidth > displayBuff->width || y + totalHeight > displayBuff->height){
+        fprintf(stderr, "Invalid coordinates\n");
+        exit(EXIT_FAILURE);
+    }
+
+    index = 0;
+    for (int i = 0; i < len; i++){
+        index = letterToIndex(text[i]);
+        for (int j = 0; j < 5; j++){
+            for (int k = 0; k < alphabet[index].width; k++){
+                if (alphabet[index].font[j][k] == '#'){
+                    for (int m = 0; m < xMultiplier; m++){
+                        for (int n = 0; n < yMultiplier; n++){
+                            displayBuff->buffer[y + j * yMultiplier + n][x + k * xMultiplier + m].character = ch;
+                            displayBuff->buffer[y + j * yMultiplier + n][x + k * xMultiplier + m].style = style;
+                        }
+                    }
+                }
+            }
+        }
+        x += (alphabet[index].width * xMultiplier) + spacing;
     }
 }
 
