@@ -11,6 +11,8 @@
 #include <signal.h>
 #include <math.h>
 
+#define RESET_COLOR "\x1b[0m"
+
 
 enum textColors {
     BLACK,
@@ -80,6 +82,5 @@ void drawFilledCircle(TuiDisplayBuffer *displayBuff, int x, int y, int radius, c
 void drawBigText(TuiDisplayBuffer *displayBuff, int x, int y, const char *text, char ch, short spacing, int xMultiplier, int yMultiplier, Style *style);
 void drawLine(TuiDisplayBuffer *displayBuff, int x1, int y1, int x2, int y2, char ch, Style *style);
 void drawBuffer(TuiDisplayBuffer *displayBuff);
-void handle_sigint(int sig);
 
 #endif

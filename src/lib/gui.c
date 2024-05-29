@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "alphabet.h"
+#define RESET_COLOR "\x1b[0m"
 
 // Define ANSI escape codes for basic colors
 const char *colors[] = {
@@ -56,7 +57,6 @@ enum bgColors {
     BG_WHITE
 };
 
-#define RESET_COLOR "\x1b[0m"
 
 // Define ANSI escape codes for text styles
 typedef struct style{
@@ -283,14 +283,6 @@ void drawBuffer(TuiDisplayBuffer *displayBuff){
 }
 
 
-
-
-
-void handle_sigint(void) {
-    printf(RESET_COLOR "\n");
-    disableRawMode();
-    exit(0);
-}
 
 
 

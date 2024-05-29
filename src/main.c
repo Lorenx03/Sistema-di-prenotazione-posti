@@ -6,6 +6,13 @@
 #include "lib/userInput.h"
 #include "lib/gui.h"
 
+void handle_sigint(int sig) {
+    (void)sig;
+    printf(RESET_COLOR "\n");
+    disableRawMode();
+    exit(0);
+}
+
 int main() {
     TuiDisplayBuffer *displayBuff = createTuiDisplayBuffer();
     Style *style = createStyle(GREEN, BG_GREEN, 1, false, false, false);
