@@ -8,11 +8,11 @@
 #include <errno.h>
 
 struct node {
-    int value;
+    void *value;
     struct node *next;
 };
 
-struct node *create_node(int v);
+struct node *create_node(void *v);
 void prepend_node(struct node **head, struct node *new_node);
 void append_node(struct node **head, struct node *new_node);
 void remove_node(struct node **head, struct node *entry);

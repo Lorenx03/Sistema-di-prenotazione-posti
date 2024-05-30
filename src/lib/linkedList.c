@@ -6,12 +6,12 @@
 
 
 struct node {
-	int value;
+	void *value;
 	struct node *next;
 };
 
 
-struct node *create_node(int v){
+struct node *create_node(void *v){
 	struct node *new_node = malloc(sizeof(struct node));
 
 	if(!new_node){
@@ -60,26 +60,22 @@ void remove_node(struct node **head, struct node *entry){
 
 
 
-// void print_list(struct node *head){
-// 	while(head){
-// 		printf("%d \n", head->value);
-// 		head = head->next;
-// 	}
-// }
+void print_int_list(struct node *head){
+	while(head){
+		printf("%d \n", *((int*)head->value));
+		head = head->next;
+	}
+}
 
 
 // int main(){
 // 	struct node *head = NULL;
-// 	struct node *nodeToElimin = create_node(2);
-// 	append_node(&head, nodeToElimin);
-// 	append_node(&head, create_node(3));
-// 	append_node(&head, create_node(4));
-// 	append_node(&head, create_node(5));
-// 	append_node(&head, create_node(6));
-// 	prepend_node(&head, create_node(10));
-// 	append_node(&head, create_node(7));
-
-// 	remove_node(&head, nodeToElimin);
+// 	int values[] = {1, 2, 3, 4, 5, 6, 7};
+	
+// 	for(int i = 0; i < 7; i++){
+// 		struct node *new_node = create_node(&values[i]);
+// 		append_node(&head, new_node);
+// 	}
 
 // 	print_list(head);
 // }
