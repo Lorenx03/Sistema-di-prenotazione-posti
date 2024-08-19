@@ -42,6 +42,8 @@ int main() {
         "3. 04:00 PM",
         "4. 07:00 PM"
     };
+
+
     int scelta;
     char buffer[N];
     char *endptr;

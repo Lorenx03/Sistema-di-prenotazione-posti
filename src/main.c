@@ -30,7 +30,7 @@ int main() {
     //print display dimensions using drawText
     char dimensions[100];
     sprintf(dimensions, "Rows: %d, Cols: %d", rows, cols);
-    drawBigText(displayBuff, 10, 10, "cinema", ' ', 1, 2, 1, style);
+    drawBigText(displayBuff, 10, 10, "Cinema", ' ', 1, 2, 1, style);
 	drawBuffer(displayBuff);
 
 	signal(SIGINT, handle_sigint);
