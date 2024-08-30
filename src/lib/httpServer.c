@@ -1,67 +1,24 @@
-/* FUNZIONAMENTO:
-    * Il server crea un socket e si mette in ascolto su di esso.
-    * Quando arriva una connessione, la accetta e la aggiunge alla coda.
-    * I thread worker si occupano di gestire le connessioni in coda.
-    * Ogni thread worker ha un array di pollfd per gestire le n connessioni ciascuno.
-    * Quando un client invia una richiesta, il thread worker la legge e la processa.
-    * Il server risponde con un messaggio di testo.
-    * Il server è non bloccante.
-*/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/ipc.h>
-#include <sys/mman.h>
-#include <sys/sem.h>
-#include <semaphore.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <fcntl.h>
-
-#define PORT 8080
-#define BUFFER_SIZE 1024
-#define MAX_THREADS 4
-#define QUEUE_SIZE 10
-#define MAX_CLIENTS_PER_THREAD 10
-
-typedef struct {
-    int *sockets;
-    int front;
-    int rear;
-    int count;
-    pthread_mutex_t lock;
-    pthread_cond_t cond;
-} ConnectionQueue;
-
-
+// This file contains the implementation of the HTTP server
+#include "httpServer.h"
 
 // ================== Socket queue data structure ================== //
-ConnectionQueue queue;
-
 void initQueue(ConnectionQueue *queue, int size) {
     queue->sockets = malloc(sizeof(int) * size);
     queue->front = 0;
     queue->rear = 0;
     queue->count = 0;
+    queue->size = size;
     pthread_mutex_init(&queue->lock, NULL);
     pthread_cond_init(&queue->cond, NULL);
 }
 
 void enqueue(ConnectionQueue *queue, int socket) {
     pthread_mutex_lock(&queue->lock);
-    while (queue->count == QUEUE_SIZE) {
+    while (queue->count == queue->size) {
         pthread_cond_wait(&queue->cond, &queue->lock);
     }
     queue->sockets[queue->rear] = socket;
-    queue->rear = (queue->rear + 1) % QUEUE_SIZE;
+    queue->rear = (queue->rear + 1) % queue->size;
     queue->count++;
     pthread_cond_signal(&queue->cond);
     pthread_mutex_unlock(&queue->lock);
@@ -73,16 +30,18 @@ int dequeue(ConnectionQueue *queue) {
         pthread_cond_wait(&queue->cond, &queue->lock);
     }
     int socket = queue->sockets[queue->front];
-    queue->front = (queue->front + 1) % QUEUE_SIZE;
+    queue->front = (queue->front + 1) % queue->size;
     queue->count--;
     pthread_cond_signal(&queue->cond);
     pthread_mutex_unlock(&queue->lock);
     return socket;
 }
 
-
-
-
+void destroyQueue(ConnectionQueue *queue) {
+    free(queue->sockets);
+    pthread_mutex_destroy(&queue->lock);
+    pthread_cond_destroy(&queue->cond);
+}
 
 
 // ================== Worker thread routine ================== //
@@ -99,14 +58,15 @@ void setNonBlocking(int socket) {
 }
 
 void *workerRoutine(void *arg) {
-    struct pollfd pfds[MAX_CLIENTS_PER_THREAD];
-    char buffers[MAX_CLIENTS_PER_THREAD][BUFFER_SIZE];
+    WorkerThreadParams *params = (WorkerThreadParams *)arg;
+    struct pollfd pfds[params->maxClientsPerThread];
+    char buffers[params->maxClientsPerThread][params->buffer_size];
     int client_count = 0;
 
     while (1) {
         // If there's room for more clients, dequeue and add to pfds array
-        if (client_count < MAX_CLIENTS_PER_THREAD) {
-            int connectionSocket = dequeue(&queue);
+        if (client_count < params->maxClientsPerThread) {
+            int connectionSocket = dequeue(params->queue);
             setNonBlocking(connectionSocket);
 
             pfds[client_count].fd = connectionSocket;
@@ -128,8 +88,8 @@ void *workerRoutine(void *arg) {
         // Iterate over the clients to check for events
         for (int i = 0; i < client_count; i++) {
             if (pfds[i].revents & POLLIN) {
-                memset(buffers[i], 0, BUFFER_SIZE);
-                int n = read(pfds[i].fd, buffers[i], BUFFER_SIZE - 1);
+                memset(buffers[i], 0, params->buffer_size);
+                int n = read(pfds[i].fd, buffers[i], params->buffer_size - 1);
                 if (n < 0) {
                     perror("Error reading from socket");
                     close(pfds[i].fd);
@@ -150,8 +110,8 @@ void *workerRoutine(void *arg) {
                         "\r\n"
                         "%s";
 
-                    char response[BUFFER_SIZE];
-                    snprintf(response, BUFFER_SIZE, response_header_template, strlen(response_body), response_body);
+                    char response[params->buffer_size];
+                    snprintf(response, params->buffer_size, response_header_template, strlen(response_body), response_body);
                     printf("Response:\n%s \n\n", response);
 
                     n = write(pfds[i].fd, response, strlen(response));
@@ -180,27 +140,42 @@ void *workerRoutine(void *arg) {
     return NULL;
 }
 
+void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, int buffer_size) {
+    params->queue = queue;
+    params->maxClientsPerThread = maxClientsPerThread;
+    params->buffer_size = buffer_size;
+}
 
 
+// ================== HTTP server ================== //
 
+void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread) {
+    params->port = port;
+    params->numThreads = numThreads;
+    params->maxClientsPerThread = maxClientsPerThread;
+}
 
-int main(int argc, char *argv[]) {
+int startHttpServer(HttpServerParams *params) {
     int serverSocket; // Socket file descriptor
     int connectionSocket; // Socket file descriptor
     socklen_t clientLength; // Client address length
     struct sockaddr_in serverAddress; // Server address
     struct sockaddr_in clientAddress; // Client address
     
-    pthread_t threads[MAX_THREADS];
+    pthread_t threads[params->numThreads];
     pthread_attr_t attr;
 
-    initQueue(&queue, QUEUE_SIZE);
+    ConnectionQueue queue;
+    initQueue(&queue, params->numThreads * params->maxClientsPerThread);
+
+    WorkerThreadParams workerParams;
+    initWorkerParams(&workerParams, &queue, params->maxClientsPerThread, 1024);
 
     // Create socket
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket < 0) {
         perror("Socket creation failed");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     printf("Socket created successfully.\n");
 
@@ -208,12 +183,12 @@ int main(int argc, char *argv[]) {
     memset((char *)&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(PORT);
+    serverAddress.sin_port = htons(params->port);
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {
         perror("Binding failed");
         close(serverSocket);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     printf("Binding completed.\n");
 
@@ -221,19 +196,19 @@ int main(int argc, char *argv[]) {
     if (listen(serverSocket, 5) < 0) {
         perror("Listening failed");
         close(serverSocket);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
-    printf("Server listening on port %d...\n", PORT);
+    printf("Server listening on port %d...\n", params->port);
 
     
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    for (int i = 0; i < MAX_THREADS; i++) {
-        if (pthread_create(&threads[i], &attr, workerRoutine, NULL) != 0) {
+    for (int i = 0; i < params->numThreads; i++) {
+        if (pthread_create(&threads[i], &attr, workerRoutine, &workerParams) != 0) {
             perror("Thread creation failed");
             close(serverSocket);
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
     }
 
@@ -244,7 +219,7 @@ int main(int argc, char *argv[]) {
         if (connectionSocket < 0) {
             perror("Accept failed");
             close(serverSocket);
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
         printf("Connection accepted.\n");
 
@@ -253,5 +228,6 @@ int main(int argc, char *argv[]) {
 
     close(serverSocket);
     pthread_attr_destroy(&attr);
+    destroyQueue(&queue);
     return 0;
 }
