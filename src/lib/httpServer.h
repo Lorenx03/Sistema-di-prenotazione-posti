@@ -19,8 +19,11 @@
 #include <poll.h>
 #include <fcntl.h>
 
+#define MAX_ROUTE_NAME 100
+#define BUFFER_SIZE 1024
+
 // Struttura per la coda delle connessioni
-typedef struct {
+typedef struct connectionQueue {
     int *sockets;
     int front;
     int rear;
@@ -30,19 +33,64 @@ typedef struct {
     pthread_cond_t cond;
 } ConnectionQueue;
 
+
+// Enumerazione dei metodi HTTP
+typedef enum httpMethod {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    HEAD,
+    OPTIONS,
+    TRACE,
+    CONNECT,
+    PATCH,
+    UNKNOWN
+} HttpMethod;
+
+// Struttura per le rotte HTTP
+typedef struct httpRoute {
+    char name[MAX_ROUTE_NAME];
+    void (*handlers[9])(char*, char*);
+
+    // Struttura ad albero per le rotte HTTP
+    struct httpRoute *children;
+    struct httpRoute *parent;
+    struct httpRoute *sibling;
+    struct httpRoute *child;
+} HttpRoute;
+
+
+typedef struct httpRoutes {
+    HttpRoute *root;
+} HttpRoutes;
+
+
 // Parametri per il server HTTP
-typedef struct {
+typedef struct httpServerParams {
     short port;
     short numThreads;
     short maxClientsPerThread;
+    HttpRoutes *routes;
 } HttpServerParams;
 
 // Parametri per i thread dei lavoratori
-typedef struct {
+typedef struct workerThreadParams {
     ConnectionQueue *queue;
     int maxClientsPerThread;
-    int buffer_size;
+    HttpRoutes *routes;
 } WorkerThreadParams;
+
+
+
+// Struttura per la richiesta HTTP
+typedef struct parsedHttpRequest {
+    HttpMethod method;
+    char path[MAX_ROUTE_NAME];
+    char *body;
+} ParsedHttpRequest;
+
+
 
 // Dichiarazione delle funzioni
 void initQueue(ConnectionQueue *queue, int size);
@@ -51,8 +99,16 @@ int dequeue(ConnectionQueue *queue);
 void destroyQueue(ConnectionQueue *queue);
 void setNonBlocking(int socket);
 void *workerRoutine(void *arg);
-void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, int buffer_size);
-void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread);
+void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, HttpRoutes *routes);
+void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread, HttpRoutes *routes);
 int startHttpServer(HttpServerParams *params);
+void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest);
+HttpRoute *findHttpRoute(HttpRoutes *routes, char *path);
+void defaultGETHandler(char *requestBody, char *response);
+void errorResponse(char *response, int errorCode);
+HttpRoute *createHttpRoute(char *name);
+void addHttpSubroute(HttpRoute *parent, HttpRoute *child);
+void initHttpRoutes(HttpRoutes *routes);
+
 
 #endif // HTTPSERVER_H

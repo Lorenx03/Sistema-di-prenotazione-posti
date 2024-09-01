@@ -7,14 +7,14 @@
 #include <string.h>
 #include <errno.h>
 
-struct node {
-    void *value;
-    struct node *next;
-};
+typedef struct node {
+	void *value;
+	struct node *next;
+} LinkedListNode;
 
-struct node *create_node(void *v);
-void prepend_node(struct node **head, struct node *new_node);
-void append_node(struct node **head, struct node *new_node);
-void remove_node(struct node **head, struct node *entry);
+LinkedListNode *create_node(void *v);
+void prepend_node(LinkedListNode **head, LinkedListNode *new_node);
+void append_node(LinkedListNode **head, LinkedListNode *new_node);
+void remove_node(LinkedListNode **head, LinkedListNode *entry);
 
 #endif

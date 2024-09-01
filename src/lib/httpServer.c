@@ -60,7 +60,7 @@ void setNonBlocking(int socket) {
 void *workerRoutine(void *arg) {
     WorkerThreadParams *params = (WorkerThreadParams *)arg;
     struct pollfd pfds[params->maxClientsPerThread];
-    char buffers[params->maxClientsPerThread][params->buffer_size];
+    char buffers[params->maxClientsPerThread][BUFFER_SIZE];
     int client_count = 0;
 
     while (1) {
@@ -88,8 +88,8 @@ void *workerRoutine(void *arg) {
         // Iterate over the clients to check for events
         for (int i = 0; i < client_count; i++) {
             if (pfds[i].revents & POLLIN) {
-                memset(buffers[i], 0, params->buffer_size);
-                int n = read(pfds[i].fd, buffers[i], params->buffer_size - 1);
+                memset(buffers[i], 0, BUFFER_SIZE);
+                int n = read(pfds[i].fd, buffers[i], BUFFER_SIZE - 1);
                 if (n < 0) {
                     perror("Error reading from socket");
                     close(pfds[i].fd);
@@ -102,16 +102,21 @@ void *workerRoutine(void *arg) {
                     // Process the request
                     printf("Here is the request from client %d:\n%s\n", i, buffers[i]);
 
-                    const char *response_body = "Ciaoooooo";
-                    const char *response_header_template =
-                        "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "Content-Length: %zu\r\n"
-                        "\r\n"
-                        "%s";
+                    ParsedHttpRequest parsedRequest;
+                    parseHttpRequest(buffers[i], &parsedRequest);
+                    char response[BUFFER_SIZE];
 
-                    char response[params->buffer_size];
-                    snprintf(response, params->buffer_size, response_header_template, strlen(response_body), response_body);
+                    HttpRoute *route = findHttpRoute(params->routes, parsedRequest.path);
+                    if (route != NULL) {
+                        if (route->handlers[parsedRequest.method] != NULL) {
+                            route->handlers[parsedRequest.method](parsedRequest.body, response);
+                        } else {
+                            errorResponse(response, 405);
+                        }
+                    } else {
+                        errorResponse(response, 404);
+                    }
+
                     printf("Response:\n%s \n\n", response);
 
                     n = write(pfds[i].fd, response, strlen(response));
@@ -140,19 +145,68 @@ void *workerRoutine(void *arg) {
     return NULL;
 }
 
-void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, int buffer_size) {
+void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, HttpRoutes *routes) {
     params->queue = queue;
     params->maxClientsPerThread = maxClientsPerThread;
-    params->buffer_size = buffer_size;
+    params->routes = routes;
+}
+
+
+void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest) {
+    // Inizializza la struttura ParsedHttpRequest
+    parsedRequest->method = UNKNOWN;
+    parsedRequest->body = NULL;
+
+    // Analizza il metodo HTTP
+    if (strncmp(request, "GET", 3) == 0) {
+        parsedRequest->method = GET;
+    } else if (strncmp(request, "POST", 4) == 0) {
+        parsedRequest->method = POST;
+    } else if (strncmp(request, "PUT", 3) == 0) {
+        parsedRequest->method = PUT;
+    } else if (strncmp(request, "DELETE", 6) == 0) {
+        parsedRequest->method = DELETE;
+    } else if (strncmp(request, "HEAD", 4) == 0) {
+        parsedRequest->method = HEAD;
+    } else if (strncmp(request, "OPTIONS", 7) == 0) {
+        parsedRequest->method = OPTIONS;
+    } else if (strncmp(request, "TRACE", 5) == 0) {
+        parsedRequest->method = TRACE;
+    } else if (strncmp(request, "CONNECT", 7) == 0) {
+        parsedRequest->method = CONNECT;
+    } else if (strncmp(request, "PATCH", 5) == 0) {
+        parsedRequest->method = PATCH;
+    } else {
+        parsedRequest->method = UNKNOWN;
+    }
+
+    // Trova il percorso
+    char *path_start = strchr(request, ' ') + 1;
+    char *path_end = strchr(path_start, ' ');
+    if (path_end != NULL) {
+        int path_length = path_end - path_start;
+        strncpy(parsedRequest->path, path_start, path_length);
+        parsedRequest->path[path_length] = '\0';
+    }
+
+    // Trova il corpo della richiesta (se presente)
+    char *body_start = strstr(request, "\r\n\r\n");
+    if (body_start != NULL) {
+        body_start += 4; // Salta i caratteri \r\n\r\n
+        parsedRequest->body = strdup(body_start);
+    }
+
+    printf("Parsed request: %s %s\n", parsedRequest->path, parsedRequest->body);
 }
 
 
 // ================== HTTP server ================== //
 
-void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread) {
+void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread, HttpRoutes *routes) {
     params->port = port;
     params->numThreads = numThreads;
     params->maxClientsPerThread = maxClientsPerThread;
+    params->routes = routes;
 }
 
 int startHttpServer(HttpServerParams *params) {
@@ -169,7 +223,7 @@ int startHttpServer(HttpServerParams *params) {
     initQueue(&queue, params->numThreads * params->maxClientsPerThread);
 
     WorkerThreadParams workerParams;
-    initWorkerParams(&workerParams, &queue, params->maxClientsPerThread, 1024);
+    initWorkerParams(&workerParams, &queue, params->maxClientsPerThread, params->routes);
 
     // Create socket
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -231,3 +285,152 @@ int startHttpServer(HttpServerParams *params) {
     destroyQueue(&queue);
     return 0;
 }
+
+
+// ================== HTTP routes ================== //
+
+void defaultGETHandler(char *requestBody, char *response) {
+    const char *response_body = "Ciaoooooo";
+    const char *response_header_template =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %zu\r\n"
+        "\r\n"
+        "%s";
+
+    snprintf(response, 1024, response_header_template, strlen(response_body), response_body);
+}
+
+
+void errorResponse(char *response, int errorCode) {
+    const char *response_body;
+    const char *status_message;
+    
+    switch (errorCode) {
+        case 400:
+            response_body = "Richiesta non valida";
+            status_message = "Bad Request";
+            break;
+        case 404:
+            response_body = "Risorsa non trovata";
+            status_message = "Not Found";
+            break;
+        case 405:
+            response_body = "Metodo non consentito";
+            status_message = "Method Not Allowed";
+            break;
+        case 500:
+            response_body = "Errore interno del server";
+            status_message = "Internal Server Error";
+            break;
+        default:
+            response_body = "Errore sconosciuto";
+            status_message = "Unknown Error";
+    }
+
+    const char *response_header_template =
+        "HTTP/1.1 %d %s\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %zu\r\n"
+        "Server: MioServer/1.0\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "%s";
+
+    snprintf(response, BUFFER_SIZE, response_header_template, errorCode, status_message, strlen(response_body), response_body);
+}
+        
+
+
+
+HttpRoute *createHttpRoute(char *name) {
+    HttpRoute *route = malloc(sizeof(HttpRoute));
+    
+    if(strlen(name) > MAX_ROUTE_NAME) {
+        perror("Route name too long");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(route->name, name);
+    route->parent = NULL;
+    route->sibling = NULL;
+    route->child = NULL;
+
+    route->handlers[GET] = defaultGETHandler;
+
+    for (int i = 1; i < 9; i++) {
+        route->handlers[i] = NULL;
+    }
+
+    return route;
+}
+
+
+void initHttpRoutes(HttpRoutes *routes) {
+    routes->root = createHttpRoute("/");
+}
+
+
+void addHttpSubroute(HttpRoute *subTreeRoot, HttpRoute *newChild) {
+    newChild->parent = subTreeRoot;
+
+    if (subTreeRoot->child == NULL){
+        subTreeRoot->child = newChild;
+    }else{
+        HttpRoute *currentNode = subTreeRoot->child;
+        while (currentNode->sibling != NULL) {
+            currentNode = currentNode->sibling;
+        }
+        currentNode->sibling = newChild;
+    }
+}
+
+
+HttpRoute *findHttpRoute(HttpRoutes *routes, char *path) {
+    HttpRoute *currentNode = routes->root;
+    char *saveptr;
+    char pathCopy[MAX_ROUTE_NAME];
+    strcpy(pathCopy, path);
+    char *token = strtok_r(pathCopy, "/", &saveptr);
+    
+    while (token != NULL) {
+        HttpRoute *child = currentNode->child;
+        while (child != NULL) {
+            if (strcmp(child->name, token) == 0) {
+                currentNode = child;
+                break;
+            }
+            child = child->sibling;
+        }
+        if (child == NULL) {
+            return NULL;
+        }
+        token = strtok_r(NULL, "/", &saveptr);
+    }
+    return currentNode;
+}
+
+
+// navigate the tree to find the correct place to insert the new route
+// void addHttpRoute(HttpRoutes *routes, HttpRoute *newRoute, char *path) {
+//     HttpRoute *currentNode = routes->root;
+//     char *token = strtok(path, "/");
+//     while (token != NULL) {
+//         HttpRoute *child = currentNode->child;
+//         while (child != NULL) {
+//             if (strcmp(child->name, token) == 0) {
+//                 currentNode = child;
+//                 break;
+//             }
+//             child = child->sibling;
+//         }
+
+//         if (child == NULL) {
+//             HttpRoute *newNode = createHttpRoute(token);
+//             addHttpSubroute(currentNode, newNode);
+//             currentNode = newNode;
+//         }
+
+//         token = strtok(NULL, "/");
+//     }
+// }
