@@ -8,7 +8,7 @@
 #include "lib/httpServer.h"
 
 void helloHandler(char *body, char *response) {
-    const char *response_body = "Ciaoooooo";
+    const char *response_body = "Ciaoooooo from helloHandler!";
     const char *response_header_template =
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
