@@ -54,6 +54,7 @@ void print_booked_seats(Seat halls[][SEATS]);
 void convert_to_uppercase(char *str);
 void cancel_booking(Seat halls[][SEATS], Film *film);
 void view_booking(Seat halls[][SEATS], Film *film);
+FilmBookings* find_hall(FilmBookings* halls, int num_halls, Film* film, const char* showtime);
 
 Film* parse_csv_film(const char* filename, int* num_films) {
     FILE* file = fopen(filename, "r");
@@ -463,6 +464,15 @@ void handle_seat_selection(Seat halls[][SEATS], Film *film, int num_tickets) {
     }
 }
 
+FilmBookings* find_hall(FilmBookings* halls, int num_halls, Film* film, const char* showtime) {
+    for (int i = 0; i < num_halls; i++) {
+        if (strcmp(halls[i].showtime, showtime) == 0) {
+            return &halls[i]; // Restituisce il puntatore alla sala corrispondente
+        }
+    }
+    return NULL; // Se non trova nessuna sala per l'orario selezionato
+}
+
 
 int select_showtime(Film* film) {
     char orari_copy[100];  // Copia temporanea per preservare la stringa originale
@@ -605,7 +615,7 @@ int main() {
                             }
                             film_choice = strtol(buffer, &endptr, 10);
 
-                            if (errno == ERANGE || endptr == buffer || (*endptr && *endptr != '\n') || (film_choice < 1 || film_choice > 3)) {
+                            if (errno == ERANGE || endptr == buffer || (*endptr && *endptr != '\n') || (film_choice < 1 || film_choice > num_films)) {
                                 printf("Scelta non valida, riprova.\n");
                                 continue;
                             }
@@ -634,7 +644,6 @@ int main() {
                                 
                 printf("\nProgrammazione:\n\n");
 
-                
                 for (int i = 0; i < num_films; i++) {
                     printf("%d - %s\n", i + 1, films[i].titolo);
                 }
@@ -648,7 +657,7 @@ int main() {
                     }
                     film_choice = strtol(buffer, &endptr, 10);
 
-                    if (errno == ERANGE || endptr == buffer || (*endptr && *endptr != '\n') || (film_choice < 1 || film_choice > 3)) {
+                    if (errno == ERANGE || endptr == buffer || (*endptr && *endptr != '\n') || (film_choice < 1 || film_choice > num_films)) {
                         printf("Scelta non valida, riprova.\n");
                         continue;
                     }
@@ -656,29 +665,17 @@ int main() {
                 }
                 printf("\nHai selezionato: %s\n", films[film_choice - 1].titolo);
                 printf("\nSeleziona l'orario: %s\n", films[film_choice - 1].orari);
-                    // Chiedi all'utente di selezionare un orario
 
+                // Chiedi all'utente di selezionare un orario
                 int selected_showtime = select_showtime(&films[film_choice - 1]);
 
                 // Trova l'indice della sala corrispondente all'orario selezionato
-                int hall_index = 0;
-                int current_film = film_choice - 1;
+                FilmBookings* selected_hall = find_hall(halls, num_halls, &films[film_choice - 1], films[film_choice - 1].orari);
 
-                // Trova la sala corrispondente
-                for (int i = 0; i < num_halls; i++) {
-                    if (strcmp(halls[i].showtime, films[current_film].orari) == 0) {
-                        if (selected_showtime == 0) {
-                            hall_index = i;
-                            break;
-                        }
-                        selected_showtime--;
-                    }
-                }
-
-                if (hall_index >= 0 && hall_index < num_halls) {
+                if (selected_hall != NULL) {
                     // Visualizza la sala corrispondente all'orario selezionato
                     printf("Visualizzazione della sala per l'orario selezionato...\n");
-                    display_seats(&halls[hall_index]);
+                    display_seats(selected_hall);
 
                     // Gestione della selezione dei posti
                     int num_tickets;
@@ -694,15 +691,15 @@ int main() {
                             printf("Numero di biglietti non valido, riprova.\n");
                             continue;
                         }
-
-                        // Gestione della selezione dei posti
-                        handle_seat_selection(halls[hall_index].seats, &films[film_choice - 1], num_tickets);
                         break;
                     }
+
+                    // Gestione della selezione dei posti
+                    handle_seat_selection(selected_hall->seats, &films[film_choice - 1], num_tickets);
                 } else {
                     printf("Orario non trovato per il film selezionato.\n");
                 }
-                
+
                 break;
                 
 
