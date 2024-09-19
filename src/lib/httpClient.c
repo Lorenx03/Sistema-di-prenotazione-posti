@@ -1,32 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
-// Buffer size
-#define BUFFER_SIZE 4096
-
-typedef enum httpMethod {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    HEAD,
-    OPTIONS,
-    TRACE,
-    CONNECT,
-    PATCH,
-    UNKNOWN
-} HttpMethod;
-
-typedef struct targetHost {
-    char *hostname;
-    int portno;
-    int sockfd;
-} TargetHost;
-
+#include "httpClient.h"
 
 void connectToHttpServer(TargetHost *targetHost) {
     struct sockaddr_in server_addr;
@@ -125,23 +97,23 @@ void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char
     response[total_bytes] = '\0';
 }
 
-
-int main() {
-    char buffer[BUFFER_SIZE];
-    TargetHost targetHost = {
-        .hostname = "localhost",
-        .portno = 8080
-    };
+//EXAMPLE USAGE
+// int main() {
+//     char buffer[BUFFER_SIZE];
+//     TargetHost targetHost = {
+//         .hostname = "localhost",
+//         .portno = 8080
+//     };
     
-    connectToHttpServer(&targetHost);
+//     connectToHttpServer(&targetHost);
 
-    // Invia richiesta HTTP GET e ricevi la risposta
-    sendHttpRequest(&targetHost, GET, "/hello", buffer);
+//     // Invia richiesta HTTP GET e ricevi la risposta
+//     sendHttpRequest(&targetHost, GET, "/hello", buffer);
 
-    // Stampa la risposta del server
-    printf("%s\n", buffer);
+//     // Stampa la risposta del server
+//     printf("%s\n", buffer);
 
-    // Chiudi il socket
-    close(targetHost.sockfd);
-    return 0;
-}
+//     // Chiudi il socket
+//     close(targetHost.sockfd);
+//     return 0;
+// }
