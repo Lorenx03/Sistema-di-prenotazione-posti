@@ -2,9 +2,12 @@
 #define CSVLIB_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <unistd.h>
 
 #define MAX_LINE_LENGTH 4096
 

@@ -3,7 +3,8 @@
 #include <string.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <unistd.h> // Aggiungi questa riga per includere ftruncate
+#include <unistd.h>
+#include <stdbool.h>
 
 #define MAX_LINE_LENGTH 4096
 
@@ -73,28 +74,75 @@ void readCsvRows(CSVFile *csv) {
             exit(EXIT_FAILURE);
         }
 
-        csv->rows[csv->rows_count] = NULL;
-        size_t col_count = 0;
-        char *saveptr;
-        char *token = strtok_r(line, ",", &saveptr);
-        
-        while (token != NULL) {
-            csv->rows[csv->rows_count] = realloc(csv->rows[csv->rows_count], (col_count + 1) * sizeof(char*));
-            if (csv->rows[csv->rows_count] == NULL) {
-                perror("Errore nell'allocazione della memoria per le colonne");
-                exit(EXIT_FAILURE);
-            }
-            
-            csv->rows[csv->rows_count][col_count] = strdup(token);
-            if (csv->rows[csv->rows_count][col_count] == NULL) {
-                perror("Errore nella duplicazione del token");
-                exit(EXIT_FAILURE);
-            }
-            
-            col_count++;
-            token = strtok_r(NULL, ",", &saveptr);
+        csv->rows[csv->rows_count] = malloc(csv->headings_count * sizeof(char*));
+        if (csv->rows[csv->rows_count] == NULL) {
+            perror("Errore nell'allocazione della memoria per le colonne");
+            exit(EXIT_FAILURE);
         }
 
+        size_t col_count = 0;
+        size_t len = strlen(line);
+        char *field = malloc(len + 1);
+        if (field == NULL) {
+            perror("Errore nell'allocazione della memoria per il campo");
+            exit(EXIT_FAILURE);
+        }
+        size_t field_pos = 0;
+        bool inQuotes = false;
+
+        for (size_t i = 0; i <= len; i++) {
+            char current = line[i];
+            if (current == '"' && (i == 0 || line[i - 1] != '\\')) {
+                inQuotes = !inQuotes;
+            } else if (current == ',' && !inQuotes) {
+                field[field_pos] = '\0';
+                // Rimuove le virgolette iniziali e finali se presenti
+                if (field[0] == '"' && field[field_pos - 1] == '"') {
+                    field[field_pos - 1] = '\0';
+                    memmove(field, field + 1, field_pos - 1);
+                }
+
+                if (csv->rows[csv->rows_count] == NULL) {
+                    perror("Errore nell'allocazione della memoria per le colonne");
+                    exit(EXIT_FAILURE);
+                }
+
+                csv->rows[csv->rows_count][col_count] = strdup(field);
+                if (csv->rows[csv->rows_count][col_count] == NULL) {
+                    perror("Errore nella duplicazione del campo");
+                    exit(EXIT_FAILURE);
+                }
+
+                col_count++;
+                field_pos = 0;
+            } else if (current == '\0') {
+                field[field_pos] = '\0';
+                // Rimuove le virgolette iniziali e finali se presenti
+                if (field[0] == '"' && field[field_pos - 1] == '"') {
+                    field[field_pos - 1] = '\0';
+                    memmove(field, field + 1, field_pos - 1);
+                }
+
+                if (csv->rows[csv->rows_count] == NULL) {
+                    perror("Errore nell'allocazione della memoria per le colonne");
+                    exit(EXIT_FAILURE);
+                }
+
+                csv->rows[csv->rows_count][col_count] = strdup(field);
+                if (csv->rows[csv->rows_count][col_count] == NULL) {
+                    perror("Errore nella duplicazione del campo");
+                    exit(EXIT_FAILURE);
+                }
+
+                col_count++;
+            } else {
+                if (field_pos < len) {
+                    field[field_pos++] = current;
+                }
+            }
+        }
+
+        free(field);
         csv->rows_count++;
     }
 }
@@ -253,8 +301,8 @@ int main() {
     readCsvHeadings(csv);
     readCsvRows(csv);
     csvPrint(csv);
-    appendCsvRow(csv, "test1,test2,test3");
-    csvPrint(csv);
+    // appendCsvRow(csv, "test1,test2,test3");
+    // csvPrint(csv);
     csvFree(csv);
     return 0;
 }
