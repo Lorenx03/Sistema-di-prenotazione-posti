@@ -212,9 +212,9 @@ void initServerParams(HttpServerParams *params, short port, short numThreads, sh
 int startHttpServer(HttpServerParams *params) {
     int serverSocket; // Socket file descriptor
     int connectionSocket; // Socket file descriptor
-    socklen_t clientLength; // Client address length
     struct sockaddr_in serverAddress; // Server address
     struct sockaddr_in clientAddress; // Client address
+    socklen_t clientLength; // Client address length
     
     pthread_t threads[params->numThreads];
     pthread_attr_t attr;

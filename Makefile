@@ -1,8 +1,8 @@
 # Define the compiler
 CC = gcc
 
-# Define the flags (without -lpthread)
-CFLAGS = -Wall -Wextra -I./src/lib
+# Define the flags (adding -lpthread and -O2)
+CFLAGS = -Wall -Wextra -I./src/lib -lpthread -O2
 
 # Define the source directories
 SRCDIR = ./src
@@ -21,13 +21,13 @@ SERVER_TARGET = server
 # Default target (build both client and server)
 all: $(CLIENT_TARGET) $(SERVER_TARGET)
 
-# Rule to build the client executable (add -lpthread here)
+# Rule to build the client executable (removed duplicate -lpthread since it's in CFLAGS)
 $(CLIENT_TARGET): $(LIBOBJECTS) $(SRCDIR)/client.o
-	$(CC) $(CFLAGS) -o $(CLIENT_TARGET) $^ -lpthread
+	$(CC) $(CFLAGS) -o $(CLIENT_TARGET) $^
 
-# Rule to build the server executable (add -lpthread here)
+# Rule to build the server executable (removed duplicate -lpthread since it's in CFLAGS)
 $(SERVER_TARGET): $(LIBOBJECTS) $(SRCDIR)/server.o
-	$(CC) $(CFLAGS) -o $(SERVER_TARGET) $^ -lpthread
+	$(CC) $(CFLAGS) -o $(SERVER_TARGET) $^
 
 # Rule to build client.o
 $(SRCDIR)/client.o: $(SRCDIR)/client.c

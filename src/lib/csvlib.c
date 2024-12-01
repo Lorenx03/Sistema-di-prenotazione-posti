@@ -145,9 +145,6 @@ CSVFile *csvInit(char *filename) {
     }
 
     strcpy(newCSVfile->filename, filename);
-    if (newCSVfile->filename == NULL) {
-        perror("Errore nella duplicazione del nome del file");
-    }
 
     newCSVfile->headings = NULL;
     newCSVfile->headings_count = 0;

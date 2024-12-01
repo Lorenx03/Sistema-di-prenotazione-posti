@@ -62,8 +62,6 @@ typedef struct tuiDisplayBuffer{
 
 
 /* ------------------------ Setup Terminal ------------------------ */
-struct termios orig_termios;
-
 void disableRawMode();
 void enableRawMode();
 void getWindowSize(int *rows, int *cols);

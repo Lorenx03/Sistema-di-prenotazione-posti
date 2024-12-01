@@ -87,7 +87,6 @@ typedef struct tuiDisplayBuffer{
 
 
 /* ------------------------ Setup Terminal ------------------------ */
-
 struct termios orig_termios;
 
 void disableRawMode() {

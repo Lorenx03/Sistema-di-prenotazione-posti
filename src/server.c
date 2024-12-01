@@ -47,7 +47,7 @@ int main() {
 
     // Inizializza il server
     HttpServerParams params;
-    initServerParams(&params, 8080, 4, 10, &routes);
+    initServerParams(&params, 8080, 1, 10, &routes);
     startHttpServer(&params);
 
     return 0;

@@ -32,7 +32,7 @@ void appendCsvRow(CSVFile *csv, const char *newRow);
 void csvPrint(CSVFile *csv);
 
 // ============================== INIT ==============================
-CSVFile *csvInit(const char *filename);
+CSVFile *csvInit(char *filename);
 
 // ============================== FREE ==============================
 void csvFree(CSVFile *csv);
