@@ -1,54 +1,38 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include "lib/linkedList.h"
-#include "lib/userInput.h"
-#include "lib/gui.h"
-#include "lib/httpServer.h"
+#include "httpServer.h"
 
-void helloHandler(char *body, char *response) {
-    const char *response_body = "Ciaoooooo from helloHandler!";
-    const char *response_header_template =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %zu\r\n"
-        "\r\n"
-        "%s";
-
-    snprintf(response, 1024, response_header_template, strlen(response_body), response_body);
+void GETrootHandler(char *request, char *response) {
+    char response_body[100];
+    snprintf(response_body, sizeof(response_body), "Root - Thread ID: %ld", (long)pthread_self());
+    httpResponseBuilder(response, 200, "OK", response_body);
 }
 
-void echoHandler(char *body, char *response) {
-    const char *response_body = body;
-    const char *response_header_template =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %zu\r\n"
-        "\r\n"
-        "%s";
-
-    snprintf(response, 1024, response_header_template, strlen(response_body), response_body);
+void GEThelloHandler(char *request, char *response) {
+    char response_body[100];
+    snprintf(response_body, sizeof(response_body), "Hello - Thread ID: %ld", (long)pthread_self());
+    httpResponseBuilder(response, 200, "OK", response_body);
 }
 
 int main() {
-    // Inizializza le route
-    HttpRoutes routes;
-    initHttpRoutes(&routes);
+    HttpRoute root = {0};
+    root.name = "/";
+    root.handlers[GET] = GETrootHandler;
 
-    // Aggiungi alcune route di test
-    HttpRoute *helloRoute = createHttpRoute("hello");
-    helloRoute->handlers[GET] = helloHandler;
-    addHttpSubroute(routes.root, helloRoute);
+    HttpRoute hello = {0};
+    hello.name = "hello";
+    hello.handlers[GET] = GEThelloHandler;
 
-    HttpRoute *echoRoute = createHttpRoute("echo");
-    echoRoute->handlers[POST] = echoHandler;
-    addHttpSubroute(routes.root, echoRoute);
+    addHttpSubroute(&root, &hello);
 
-    // Inizializza il server
-    HttpServerParams params;
-    initServerParams(&params, 8080, 1, 10, &routes);
-    startHttpServer(&params);
+    HttpServer server = {
+        .port = 8090,
+        .numThreads = 4,
+        .root = &root
+    };
 
+    if (httpServerServe(&server)) {
+        fprintf(stderr, "Error starting server\n");
+        return 1;
+    }
     return 0;
 }

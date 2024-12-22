@@ -1,40 +1,40 @@
-#ifndef HTTPSERVER_H
-#define HTTPSERVER_H
+#ifndef HTTP_WEB_SERVER_H
+#define HTTP_WEB_SERVER_H
 
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <signal.h>
-#include <pthread.h>
+#include <sys/event.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
 #include <sys/sem.h>
-#include <semaphore.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define MAX_ROUTE_NAME 100
+#define MAX_REQUEST_SIZE 1024
+#define MAX_RESPONSE_SIZE 1024
 #define BUFFER_SIZE 1024
+#define POLL_FD_SIZE 200
 
-// Struttura per la coda delle connessioni
-typedef struct connectionQueue {
-    int *sockets;
-    int front;
-    int rear;
-    int count;
-    int size;
-    pthread_mutex_t lock;
-    pthread_cond_t cond;
-} ConnectionQueue;
+#define HTTP_RESPONSE_TEMPLATE "HTTP/1.1 %d %s\r\n" \
+    "Content-Type: text/plain\r\n" \
+    "Content-Length: %zu\r\n" \
+    "\r\n" \
+    "%s"
 
+// ================================ ROUTES ================================
 
-// Enumerazione dei metodi HTTP
+// Http methods enum
 typedef enum httpMethod {
     GET,
     POST,
@@ -48,12 +48,12 @@ typedef enum httpMethod {
     UNKNOWN
 } HttpMethod;
 
-// Struttura per le rotte HTTP
+// Http route struct
 typedef struct httpRoute {
-    char name[MAX_ROUTE_NAME];
+    char *name;
     void (*handlers[9])(char*, char*);
 
-    // Struttura ad albero per le rotte HTTP
+    // Http route tree structure
     struct httpRoute *children;
     struct httpRoute *parent;
     struct httpRoute *sibling;
@@ -61,54 +61,61 @@ typedef struct httpRoute {
 } HttpRoute;
 
 
-typedef struct httpRoutes {
-    HttpRoute *root;
-} HttpRoutes;
 
+// ================================ HTTP SERVER ================================
 
-// Parametri per il server HTTP
-typedef struct httpServerParams {
-    short port;
-    short numThreads;
-    short maxClientsPerThread;
-    HttpRoutes *routes;
-} HttpServerParams;
-
-// Parametri per i thread dei lavoratori
-typedef struct workerThreadParams {
-    ConnectionQueue *queue;
-    int maxClientsPerThread;
-    HttpRoutes *routes;
-} WorkerThreadParams;
-
-
-
-// Struttura per la richiesta HTTP
+// Http request struct
 typedef struct parsedHttpRequest {
     HttpMethod method;
     char path[MAX_ROUTE_NAME];
     char *body;
 } ParsedHttpRequest;
 
+// Http server struct
+typedef struct httpServer {
+    short port;
+    short numThreads;
+    HttpRoute *root;
+} HttpServer;
 
+// Worker thread params
+typedef struct workerThreadParams {
+    int id;
+    int serverSocket;
+    HttpRoute *root;
+} WorkerThreadParams;
 
-// Dichiarazione delle funzioni
-void initQueue(ConnectionQueue *queue, int size);
-void enqueue(ConnectionQueue *queue, int socket);
-int dequeue(ConnectionQueue *queue);
-void destroyQueue(ConnectionQueue *queue);
-void setNonBlocking(int socket);
-void *workerRoutine(void *arg);
-void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, HttpRoutes *routes);
-void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread, HttpRoutes *routes);
-int startHttpServer(HttpServerParams *params);
-void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest);
-HttpRoute *findHttpRoute(HttpRoutes *routes, char *path);
-void defaultGETHandler(char *requestBody, char *response);
+// Adds a new child route to an existing route in the HTTP routing tree
+void addHttpSubroute(HttpRoute *subTreeRoot, HttpRoute *newChild);
+
+// Finds a route in the HTTP routing tree based on the given path
+HttpRoute *findHttpRoute(HttpRoute *currentNode, char *path);
+
+// Builds an HTTP response with the given status code, message, and body
+void httpResponseBuilder(char *response, int statusCode, const char *statusMessage, const char *responseBody);
+
+// Generates an HTTP error response with the specified error code
 void errorResponse(char *response, int errorCode);
-HttpRoute *createHttpRoute(char *name);
-void addHttpSubroute(HttpRoute *parent, HttpRoute *child);
-void initHttpRoutes(HttpRoutes *routes);
 
+// Parses an HTTP request string into a ParsedHttpRequest structure
+void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest);
 
-#endif // HTTPSERVER_H
+// Sets a socket to non-blocking mode
+void setNonBlocking(int socket);
+
+// Writes data to a non-blocking socket
+size_t nonBlockWriteSocket(int file_descriptor, char *buff, size_t buffLenght);
+
+// Reads data from a non-blocking socket
+size_t nonBlockReadSocket(int file_descriptor, char *buff, size_t buffLenght);
+
+// Handles an individual client connection
+int handleClient(int connSocketFd, HttpRoute *root);
+
+// Main routine for worker threads handling client connections
+void *workerRoutine(void *params);
+
+// Initializes and starts the HTTP server
+int httpServerServe(HttpServer *server);
+
+#endif

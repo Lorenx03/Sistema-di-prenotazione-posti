@@ -1,163 +1,93 @@
-// This file contains the implementation of the HTTP server
 #include "httpServer.h"
 
-// ================== Socket queue data structure ================== //
-void initQueue(ConnectionQueue *queue, int size) {
-    queue->sockets = malloc(sizeof(int) * size);
-    queue->front = 0;
-    queue->rear = 0;
-    queue->count = 0;
-    queue->size = size;
-    pthread_mutex_init(&queue->lock, NULL);
-    pthread_cond_init(&queue->cond, NULL);
-}
+// ================================ ROUTES ================================
 
-void enqueue(ConnectionQueue *queue, int socket) {
-    pthread_mutex_lock(&queue->lock);
-    while (queue->count == queue->size) {
-        pthread_cond_wait(&queue->cond, &queue->lock);
-    }
-    queue->sockets[queue->rear] = socket;
-    queue->rear = (queue->rear + 1) % queue->size;
-    queue->count++;
-    pthread_cond_signal(&queue->cond);
-    pthread_mutex_unlock(&queue->lock);
-}
+void addHttpSubroute(HttpRoute *subTreeRoot, HttpRoute *newChild) {
+    newChild->parent = subTreeRoot;
 
-int dequeue(ConnectionQueue *queue) {
-    pthread_mutex_lock(&queue->lock);
-    while (queue->count == 0) {
-        pthread_cond_wait(&queue->cond, &queue->lock);
-    }
-    int socket = queue->sockets[queue->front];
-    queue->front = (queue->front + 1) % queue->size;
-    queue->count--;
-    pthread_cond_signal(&queue->cond);
-    pthread_mutex_unlock(&queue->lock);
-    return socket;
-}
-
-void destroyQueue(ConnectionQueue *queue) {
-    free(queue->sockets);
-    pthread_mutex_destroy(&queue->lock);
-    pthread_cond_destroy(&queue->cond);
-}
-
-
-// ================== Worker thread routine ================== //
-void setNonBlocking(int socket) {
-    int flags = fcntl(socket, F_GETFL, 0);
-    if (flags == -1) {
-        perror("fcntl F_GETFL failed");
-        exit(EXIT_FAILURE);
-    }
-    if (fcntl(socket, F_SETFL, flags | O_NONBLOCK) == -1) {
-        perror("fcntl F_SETFL failed");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void *workerRoutine(void *arg) {
-    WorkerThreadParams *params = (WorkerThreadParams *)arg;
-    struct pollfd pfds[params->maxClientsPerThread];
-    char buffers[params->maxClientsPerThread][BUFFER_SIZE];
-    int client_count = 0;
-
-    while (1) {
-        // If there's room for more clients, dequeue and add to pfds array
-        if (client_count < params->maxClientsPerThread) {
-            int connectionSocket = dequeue(params->queue);
-            setNonBlocking(connectionSocket);
-
-            pfds[client_count].fd = connectionSocket;
-            pfds[client_count].events = POLLIN;
-            client_count++;
+    if (subTreeRoot->child == NULL){
+        subTreeRoot->child = newChild;
+    }else{
+        HttpRoute *currentNode = subTreeRoot->child;
+        while (currentNode->sibling != NULL) {
+            currentNode = currentNode->sibling;
         }
+        currentNode->sibling = newChild;
+    }
+}
 
-        // Poll the sockets
-        int poll_count = poll(pfds, client_count, -1);
+HttpRoute *findHttpRoute(HttpRoute *currentNode, char *path) {
+    if (path == NULL) return NULL;
 
-        if (poll_count < 0) {
-            perror("poll error");
-            for (int i = 0; i < client_count; i++) {
-                close(pfds[i].fd);
+    char pathCopy[MAX_ROUTE_NAME] = {0};
+    strncpy(pathCopy, path, MAX_ROUTE_NAME - 1);
+    pathCopy[MAX_ROUTE_NAME - 1] = '\0';
+
+    char *saveptr;
+    char *token = strtok_r(pathCopy, "/", &saveptr);
+    
+    while (token != NULL) {
+        HttpRoute *child = currentNode->child;
+        while (child != NULL) {
+            if (strcmp(child->name, token) == 0) {
+                currentNode = child;
+                break;
             }
-            continue;
+            child = child->sibling;
         }
-
-        // Iterate over the clients to check for events
-        for (int i = 0; i < client_count; i++) {
-            if (pfds[i].revents & POLLIN) {
-                memset(buffers[i], 0, BUFFER_SIZE);
-                int n = read(pfds[i].fd, buffers[i], BUFFER_SIZE - 1);
-                if (n < 0) {
-                    perror("Error reading from socket");
-                    close(pfds[i].fd);
-                    pfds[i].fd = -1;
-                } else if (n == 0) {
-                    // Connection closed by client
-                    close(pfds[i].fd);
-                    pfds[i].fd = -1;
-                } else {
-                    // Process the request
-                    printf("Here is the request from client %d:\n%s\n", i, buffers[i]);
-
-                    ParsedHttpRequest parsedRequest;
-                    parseHttpRequest(buffers[i], &parsedRequest);
-                    char response[BUFFER_SIZE];
-
-                    HttpRoute *route = findHttpRoute(params->routes, parsedRequest.path);
-                    if (route != NULL) {
-                        if (route->handlers[parsedRequest.method] != NULL) {
-                            route->handlers[parsedRequest.method](parsedRequest.body, response);
-                        } else {
-                            errorResponse(response, 405);
-                        }
-                    } else {
-                        errorResponse(response, 404);
-                    }
-
-                    printf("Response:\n%s \n\n", response);
-
-                    n = write(pfds[i].fd, response, strlen(response));
-                    if (n < 0) {
-                        perror("Error writing to socket");
-                    }
-
-                    printf("Response sent.\n");
-
-                    close(pfds[i].fd);
-                    pfds[i].fd = -1;
-                }
-            }
+        if (child == NULL) {
+            return NULL;
         }
+        token = strtok_r(NULL, "/", &saveptr);
+    }
+    return currentNode;
+}
 
-        // Remove closed connections from the poll array
-        int j = 0;
-        for (int i = 0; i < client_count; i++) {
-            if (pfds[i].fd != -1) {
-                pfds[j++] = pfds[i];
-            }
-        }
-        client_count = j;
+// ================================ HTTP SERVER ================================
+
+// ----------------------- RESPONSES -----------------------
+
+void httpResponseBuilder(char *response, int statusCode, const char *statusMessage, const char *responseBody) {
+    snprintf(response, MAX_RESPONSE_SIZE, HTTP_RESPONSE_TEMPLATE, statusCode, statusMessage, strlen(responseBody), responseBody);
+}
+
+void errorResponse(char *response, int errorCode) {
+    const char *responseBody;
+    const char *statusMessage;
+    
+    switch (errorCode) {
+        case 400:
+            responseBody = "Richiesta non valida";
+            statusMessage = "Bad Request";
+            break;
+        case 404:
+            responseBody = "Risorsa non trovata";
+            statusMessage = "Not Found";
+            break;
+        case 405:
+            responseBody = "Metodo non consentito";
+            statusMessage = "Method Not Allowed";
+            break;
+        case 500:
+            responseBody = "Errore interno del server";
+            statusMessage = "Internal Server Error";
+            break;
+        default:
+            responseBody = "Errore sconosciuto";
+            statusMessage = "Unknown Error";
     }
 
-    return NULL;
+    httpResponseBuilder(response, errorCode, statusMessage, responseBody);
 }
 
-void initWorkerParams(WorkerThreadParams *params, ConnectionQueue *queue, int maxClientsPerThread, HttpRoutes *routes) {
-    params->queue = queue;
-    params->maxClientsPerThread = maxClientsPerThread;
-    params->routes = routes;
-}
-
+// ----------------------- REQUESTS -----------------------
 
 void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest) {
-    // Inizializza la struttura ParsedHttpRequest
+    // Initialize parsed request
     parsedRequest->method = UNKNOWN;
     parsedRequest->body = NULL;
 
-    // Analizza il metodo HTTP
+    // Parse HTTP method
     if (strncmp(request, "GET", 3) == 0) {
         parsedRequest->method = GET;
     } else if (strncmp(request, "POST", 4) == 0) {
@@ -180,7 +110,7 @@ void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest) {
         parsedRequest->method = UNKNOWN;
     }
 
-    // Trova il percorso
+    // Find path
     char *path_start = strchr(request, ' ') + 1;
     char *path_end = strchr(path_start, ' ');
     if (path_end != NULL) {
@@ -189,248 +119,174 @@ void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest) {
         parsedRequest->path[path_length] = '\0';
     }
 
-    // Trova il corpo della richiesta (se presente)
+    // Find request body
     char *body_start = strstr(request, "\r\n\r\n");
     if (body_start != NULL) {
-        body_start += 4; // Salta i caratteri \r\n\r\n
+        body_start += 4; // Skip \r\n\r\n
         parsedRequest->body = strdup(body_start);
     }
 
-    printf("Parsed request: %s %s\n", parsedRequest->path, parsedRequest->body);
+    // printf("Parsed request: %s %s\n", parsedRequest->path, parsedRequest->body);
 }
 
+// ----------------------- SOCKETS -----------------------
 
-// ================== HTTP server ================== //
+int sendall(int s, char *buf, int *len) {
+    int total = 0;         
+    int bytesleft = *len;  
+    int n;
 
-void initServerParams(HttpServerParams *params, short port, short numThreads, short maxClientsPerThread, HttpRoutes *routes) {
-    params->port = port;
-    params->numThreads = numThreads;
-    params->maxClientsPerThread = maxClientsPerThread;
-    params->routes = routes;
-}
-
-int startHttpServer(HttpServerParams *params) {
-    int serverSocket; // Socket file descriptor
-    int connectionSocket; // Socket file descriptor
-    struct sockaddr_in serverAddress; // Server address
-    struct sockaddr_in clientAddress; // Client address
-    socklen_t clientLength; // Client address length
-    
-    pthread_t threads[params->numThreads];
-    pthread_attr_t attr;
-
-    ConnectionQueue queue;
-    initQueue(&queue, params->numThreads * params->maxClientsPerThread);
-
-    WorkerThreadParams workerParams;
-    initWorkerParams(&workerParams, &queue, params->maxClientsPerThread, params->routes);
-
-    // Create socket
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket < 0) {
-        perror("Socket creation failed");
-        return EXIT_FAILURE;
+    while (total < *len) {
+        n = send(s, buf + total, bytesleft, 0);
+        if (n == -1) {
+            break;
+        }
+        total += n;
+        bytesleft -= n;
     }
-    printf("Socket created successfully.\n");
+
+    *len = total;             
+    return n == -1 ? -1 : 0;
+}
+
+// ----------------------- CLIENTS -----------------------
+
+int handleClient(int connSocketFd, HttpRoute *root){
+    char rawRequest[MAX_REQUEST_SIZE] = {0};
+    char response[MAX_RESPONSE_SIZE] = {0};
+
+    // printf("\n\nHandling client\n");
+    // READ
+    ssize_t bytesRead = recv(connSocketFd, rawRequest, MAX_REQUEST_SIZE - 1, 0);
+    if (bytesRead < 0) {
+        fprintf(stderr, "Error reading from socket: %s\n", strerror(errno));
+        return -1;
+    }
+    if (bytesRead == 0) {
+        printf("Client disconnected\n");
+        return -1;
+    }
+    rawRequest[bytesRead] = '\0';
+
+    // printf("bytesRead: %zd\n", bytesRead);
+    // printf("Raw request:\n%s\n", rawRequest);
+
+    ParsedHttpRequest parsedRequest;
+    parseHttpRequest(rawRequest, &parsedRequest);
+    HttpRoute *route = findHttpRoute(root, parsedRequest.path);
+
+    if (route != NULL) {
+        if (route->handlers[parsedRequest.method] != NULL) {
+            route->handlers[parsedRequest.method](parsedRequest.body, response);
+        } else {
+            errorResponse(response, 405);
+        }
+    } else {
+        errorResponse(response, 404);
+    }
+
+    // WRITE
+    int responseLength = strlen(response);
+    sendall(connSocketFd, response, &responseLength);
+    if (responseLength < 0) {
+        fprintf(stderr, "Error sending response: %s\n", strerror(errno));
+        return -1;
+    }
+
+    // printf("Response sent:\n%s\n", response);
+    return 0;
+}
+
+
+// ----------------------- WORKER THREADS -----------------------
+
+void *workerRoutine(void *params) {
+    // Unpack params
+    int id = ((WorkerThreadParams *)params)->id;
+    int serverSocket = ((WorkerThreadParams *)params)->serverSocket;
+    HttpRoute *root = ((WorkerThreadParams *)params)->root;
+
+    // Client address
+    struct sockaddr_in clientAddress;
+    socklen_t clientLength;
+
+    while (1) {
+        // Accept
+        int connSocketFd = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
+        if (connSocketFd < 0) {
+            fprintf(stderr, "Accept failed: %s\n", strerror(errno));
+            continue;
+        }
+
+        // Handle
+        handleClient(connSocketFd, root);
+
+        // Close
+        close(connSocketFd);
+    }
+}
+
+
+// ----------------------- SERVER -----------------------
+
+int httpServerServe(HttpServer *server) {
+    int serverSocket; // Socket file descriptor
+    struct sockaddr_in serverAddress; // Server address
+
+    pthread_t threads[server->numThreads];
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     // Bind socket to an address and port
     memset((char *)&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(params->port);
+    serverAddress.sin_port = htons(server->port);
+
+    // Create socket
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket < 0) {
+        fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
+        return EXIT_FAILURE;
+    }
+    printf("Socket created successfully.\n");
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {
-        perror("Binding failed");
+        fprintf(stderr, "Binding failed: %s\n", strerror(errno));
         close(serverSocket);
         return EXIT_FAILURE;
     }
     printf("Binding completed.\n");
 
     // Listen for incoming connections
-    if (listen(serverSocket, 5) < 0) {
-        perror("Listening failed");
+    if (listen(serverSocket, SOMAXCONN) < 0) {
+        fprintf(stderr, "Listening failed: %s\n", strerror(errno));
         close(serverSocket);
         return EXIT_FAILURE;
     }
-    printf("Server listening on port %d...\n", params->port);
+    printf("Server listening on port %d...\n", server->port);
 
-    
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    // setNonBlocking(serverSocket);
 
-    for (int i = 0; i < params->numThreads; i++) {
-        if (pthread_create(&threads[i], &attr, workerRoutine, &workerParams) != 0) {
-            perror("Thread creation failed");
+    WorkerThreadParams workerParams[server->numThreads];
+    for (int i = 0; i < server->numThreads; i++) {
+        workerParams[i] = (WorkerThreadParams){
+            .id = i,
+            .serverSocket = serverSocket,
+            .root = server->root,
+        };
+    }
+
+    // Threadpool
+    for (int i = 1; i < server->numThreads; i++) {
+        if (pthread_create(&threads[i], &attr, workerRoutine, &workerParams[i]) != 0) {
+            fprintf(stderr, "Thread creation failed: %s\n", strerror(errno));
             close(serverSocket);
             return EXIT_FAILURE;
         }
     }
 
-    clientLength = sizeof(clientAddress);
-
-    while (1) {
-        connectionSocket = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
-        if (connectionSocket < 0) {
-            perror("Accept failed");
-            close(serverSocket);
-            return EXIT_FAILURE;
-        }
-        printf("Connection accepted.\n");
-
-        enqueue(&queue, connectionSocket);
-    }
-
-    close(serverSocket);
-    pthread_attr_destroy(&attr);
-    destroyQueue(&queue);
+    workerRoutine(&workerParams[0]);
     return 0;
 }
-
-
-// ================== HTTP routes ================== //
-
-void defaultGETHandler(char *requestBody, char *response) {
-    const char *response_body = "Ciaoooooo";
-    const char *response_header_template =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %zu\r\n"
-        "\r\n"
-        "%s";
-
-    snprintf(response, 1024, response_header_template, strlen(response_body), response_body);
-}
-
-
-void errorResponse(char *response, int errorCode) {
-    const char *response_body;
-    const char *status_message;
-    
-    switch (errorCode) {
-        case 400:
-            response_body = "Richiesta non valida";
-            status_message = "Bad Request";
-            break;
-        case 404:
-            response_body = "Risorsa non trovata";
-            status_message = "Not Found";
-            break;
-        case 405:
-            response_body = "Metodo non consentito";
-            status_message = "Method Not Allowed";
-            break;
-        case 500:
-            response_body = "Errore interno del server";
-            status_message = "Internal Server Error";
-            break;
-        default:
-            response_body = "Errore sconosciuto";
-            status_message = "Unknown Error";
-    }
-
-    const char *response_header_template =
-        "HTTP/1.1 %d %s\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %zu\r\n"
-        "Server: MioServer/1.0\r\n"
-        "Connection: close\r\n"
-        "\r\n"
-        "%s";
-
-    snprintf(response, BUFFER_SIZE, response_header_template, errorCode, status_message, strlen(response_body), response_body);
-}
-        
-
-
-
-HttpRoute *createHttpRoute(char *name) {
-    HttpRoute *route = malloc(sizeof(HttpRoute));
-    
-    if(strlen(name) > MAX_ROUTE_NAME) {
-        perror("Route name too long");
-        exit(EXIT_FAILURE);
-    }
-
-    strcpy(route->name, name);
-    route->parent = NULL;
-    route->sibling = NULL;
-    route->child = NULL;
-
-    route->handlers[GET] = defaultGETHandler;
-
-    for (int i = 1; i < 9; i++) {
-        route->handlers[i] = NULL;
-    }
-
-    return route;
-}
-
-
-void initHttpRoutes(HttpRoutes *routes) {
-    routes->root = createHttpRoute("/");
-}
-
-
-void addHttpSubroute(HttpRoute *subTreeRoot, HttpRoute *newChild) {
-    newChild->parent = subTreeRoot;
-
-    if (subTreeRoot->child == NULL){
-        subTreeRoot->child = newChild;
-    }else{
-        HttpRoute *currentNode = subTreeRoot->child;
-        while (currentNode->sibling != NULL) {
-            currentNode = currentNode->sibling;
-        }
-        currentNode->sibling = newChild;
-    }
-}
-
-
-HttpRoute *findHttpRoute(HttpRoutes *routes, char *path) {
-    HttpRoute *currentNode = routes->root;
-    char *saveptr;
-    char pathCopy[MAX_ROUTE_NAME];
-    strcpy(pathCopy, path);
-    char *token = strtok_r(pathCopy, "/", &saveptr);
-    
-    while (token != NULL) {
-        HttpRoute *child = currentNode->child;
-        while (child != NULL) {
-            if (strcmp(child->name, token) == 0) {
-                currentNode = child;
-                break;
-            }
-            child = child->sibling;
-        }
-        if (child == NULL) {
-            return NULL;
-        }
-        token = strtok_r(NULL, "/", &saveptr);
-    }
-    return currentNode;
-}
-
-
-// navigate the tree to find the correct place to insert the new route
-// void addHttpRoute(HttpRoutes *routes, HttpRoute *newRoute, char *path) {
-//     HttpRoute *currentNode = routes->root;
-//     char *token = strtok(path, "/");
-//     while (token != NULL) {
-//         HttpRoute *child = currentNode->child;
-//         while (child != NULL) {
-//             if (strcmp(child->name, token) == 0) {
-//                 currentNode = child;
-//                 break;
-//             }
-//             child = child->sibling;
-//         }
-
-//         if (child == NULL) {
-//             HttpRoute *newNode = createHttpRoute(token);
-//             addHttpSubroute(currentNode, newNode);
-//             currentNode = newNode;
-//         }
-
-//         token = strtok(NULL, "/");
-//     }
-// }
