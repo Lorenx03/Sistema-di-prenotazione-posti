@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "httpServer.h"
+#include "cinema.h"
+#include "filmsCSVparser.h"
 
 void GETrootHandler(char *request, char *response) {
     char response_body[100];
@@ -7,22 +9,27 @@ void GETrootHandler(char *request, char *response) {
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
-void GEThelloHandler(char *request, char *response) {
-    char response_body[100];
-    snprintf(response_body, sizeof(response_body), "Hello - Thread ID: %ld", (long)pthread_self());
+void GETfilmsHandler(char *request, char *response) {
+    char response_body[MAX_RESPONSE_SIZE] = {0};
+    Films *films = initFilmsList("films.csv");
+    print_films(response_body, films->list, films->count);
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
+
 int main() {
+    //Random seed for booking code generation
+    srand(time(NULL));
+    
     HttpRoute root = {0};
     root.name = "/";
     root.handlers[GET] = GETrootHandler;
 
-    HttpRoute hello = {0};
-    hello.name = "hello";
-    hello.handlers[GET] = GEThelloHandler;
+    HttpRoute films = {0};
+    films.name = "films";
+    films.handlers[GET] = GETfilmsHandler;
 
-    addHttpSubroute(&root, &hello);
+    addHttpSubroute(&root, &films);
 
     HttpServer server = {
         .port = 8090,
