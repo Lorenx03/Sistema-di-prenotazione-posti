@@ -12,7 +12,7 @@ void GETrootHandler(char *request, char *response) {
 void GETfilmsHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
     Films *films = initFilmsList("films.csv");
-    print_films(response_body, films->list, films->count);
+    print_films(response_body, MAX_RESPONSE_SIZE, films->list, films->count);
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
@@ -33,7 +33,7 @@ int main() {
 
     HttpServer server = {
         .port = 8090,
-        .numThreads = 4,
+        .numThreads = 1,
         .root = &root
     };
 

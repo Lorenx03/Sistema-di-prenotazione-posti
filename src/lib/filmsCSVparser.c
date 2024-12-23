@@ -140,19 +140,37 @@ void free_films(Film *films, int film_count) {
     free(films);
 }
 
-// Function to print film details (for testing)
-void print_films(char *buffer, Film *films, int film_count) {
+// Function to print film details to a buffer (for testing)
+void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) {
+    size_t offset = 0;
     for (int i = 0; i < film_count; i++) {
-        sprintf(buffer + strlen(buffer), "Film %d:\n", i + 1);
-        sprintf(buffer + strlen(buffer), "  Nome: %s\n", films[i].name);
-        sprintf(buffer + strlen(buffer), "  Genere: %s\n", films[i].genre);
-        sprintf(buffer + strlen(buffer), "  Lingua: %s\n", films[i].language);
-        sprintf(buffer + strlen(buffer), "  Durata: %d minuti\n", films[i].duration);
-        sprintf(buffer + strlen(buffer), "  Attori: %s\n", films[i].actors);
-        sprintf(buffer + strlen(buffer), "  Trama: %s\n", films[i].plot);
-        sprintf(buffer + strlen(buffer), "  Orari: %s\n", films[i].showtimes);
-        sprintf(buffer + strlen(buffer), "  Posti totali: %d\n", calculate_total_seats(&films[i]));
-        sprintf(buffer + strlen(buffer), "\n");
+        size_t written = snprintf(buffer + offset, buffer_size - offset,
+            "Film %d:\n"
+            "  Nome: %s\n"
+            "  Genere: %s\n"
+            "  Lingua: %s\n"
+            "  Durata: %d minuti\n"
+            "  Attori: %s\n"
+            "  Trama: %s\n"
+            "  Orari: %s\n"
+            "  Posti totali: %d\n\n",
+            i + 1,
+            films[i].name,
+            films[i].genre,
+            films[i].language,
+            films[i].duration,
+            films[i].actors,
+            films[i].plot,
+            films[i].showtimes,
+            calculate_total_seats(&films[i])
+        );
+
+        if (written < 0 || written >= buffer_size - offset) {
+            fprintf(stderr, "Error writing to buffer\n");
+            break;
+        }
+
+        offset += written;
     }
 }
 

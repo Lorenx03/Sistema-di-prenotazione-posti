@@ -5,13 +5,13 @@ int main() {
     char buffer[BUFFER_SIZE];
     TargetHost targetHost = {
         .hostname = "localhost",
-        .portno = 8080
+        .portno = 8090
     };
     
     connectToHttpServer(&targetHost);
 
     // Invia richiesta HTTP GET e ricevi la risposta
-    sendHttpRequest(&targetHost, GET, "/hello", buffer);
+    sendHttpRequest(&targetHost, GET, "/films", buffer);
 
     // Stampa la risposta del server
     printf("%s\n", buffer);

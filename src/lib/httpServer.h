@@ -21,10 +21,10 @@
 #include <unistd.h>
 
 #define MAX_ROUTE_NAME 100
-#define MAX_REQUEST_SIZE 1024
-#define MAX_RESPONSE_SIZE 1024
+#define MAX_REQUEST_SIZE 4096
+#define MAX_RESPONSE_SIZE 4096
 #define BUFFER_SIZE 1024
-#define POLL_FD_SIZE 200
+// #define POLL_FD_SIZE 200
 
 #define HTTP_RESPONSE_TEMPLATE "HTTP/1.1 %d %s\r\n" \
     "Content-Type: text/plain\r\n" \
