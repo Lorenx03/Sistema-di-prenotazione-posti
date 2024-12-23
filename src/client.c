@@ -1,20 +1,36 @@
 #include "httpClient.h"
+#include "userInput.h"
 
 //EXAMPLE USAGE
 int main() {
-    char buffer[BUFFER_SIZE];
+    int currentPage = 1;
+    char buffer[4096];
+
     TargetHost targetHost = {
         .hostname = "localhost",
         .portno = 8090
     };
-    
-    connectToHttpServer(&targetHost);
 
-    // Invia richiesta HTTP GET e ricevi la risposta
-    sendHttpRequest(&targetHost, GET, "/films", buffer);
+    do{
+        connectToHttpServer(&targetHost);
 
-    // Stampa la risposta del server
-    printf("%s\n", buffer);
+        switch (currentPage) {
+        case 0:
+            sendHttpRequest(&targetHost, GET, "/", buffer);
+            break;
+
+        case 1:
+            sendHttpRequest(&targetHost, GET, "/films", buffer);
+            break;
+        
+        default:
+            break;
+        }
+
+        printf("%s\n", buffer);
+        printf("\nInserisci la tua scelta: ");
+        read_int(&currentPage);
+    }while (currentPage != 4);
 
     // Chiudi il socket
     close(targetHost.sockfd);
