@@ -3,17 +3,17 @@
 
 //EXAMPLE USAGE
 int main() {
-    int currentPage = 1;
+    int currentPage = 0;
     char buffer[4096];
 
     TargetHost targetHost = {
-        .hostname = "localhost",
+        .ip_addr = "127.0.0.1",
         .portno = 8090
     };
 
     do{
         connectToHttpServer(&targetHost);
-
+        
         switch (currentPage) {
         case 0:
             sendHttpRequest(&targetHost, GET, "/", buffer);

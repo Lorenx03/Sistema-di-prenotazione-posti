@@ -1,9 +1,6 @@
 #include "httpClient.h"
 
 void connectToHttpServer(TargetHost *targetHost) {
-    struct sockaddr_in server_addr;
-    struct hostent *server;
-
     // Crea il socket
     targetHost->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (targetHost->sockfd < 0) {
@@ -11,27 +8,23 @@ void connectToHttpServer(TargetHost *targetHost) {
         exit(1);
     }
 
-    // Ottiene il server tramite hostname
-    server = gethostbyname(targetHost->hostname);
-    if (server == NULL) {
-        fprintf(stderr, "Errore, host non trovato\n");
+    printf("Socket creato con fd: %d\n", targetHost->sockfd);
+
+    targetHost->server_addr.sin_family = AF_INET;
+    targetHost->server_addr.sin_port = htons(targetHost->portno);
+
+    if (inet_pton(AF_INET, targetHost->ip_addr, &targetHost->server_addr.sin_addr) <= 0) {
+        fprintf(stderr, "Errore nella conversione dell'indirizzo IP\n");
         exit(1);
     }
 
-    // Imposta l'indirizzo del server
-    memset((char *)&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    memcpy((char *)&server_addr.sin_addr.s_addr, (char *)server->h_addr, server->h_length);
-    server_addr.sin_port = htons(targetHost->portno);
-
-    // Connette al server
-    if (connect(targetHost->sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    if(connect(targetHost->sockfd, (struct sockaddr *)&targetHost->server_addr, sizeof(targetHost->server_addr)) < 0) {
         fprintf(stderr, "Errore nella connessione al server\n");
         exit(1);
     }
-
-    // Non ritorna nulla, il campo sockfd di targetHost è già stato modificato
 }
+
+
 
 void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response) {
     char buffer[BUFFER_SIZE];
@@ -74,9 +67,9 @@ void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char
              "%s %s HTTP/1.1\r\n"
              "Host: %s\r\n"
              "Connection: close\r\n\r\n",
-             methodStr, path, targetHost->hostname);
+             methodStr, path, targetHost->ip_addr);
     
-    if (write(targetHost->sockfd, buffer, strlen(buffer)) < 0) {
+    if (send(targetHost->sockfd, buffer, strlen(buffer),0) < 0) {
         fprintf(stderr, "Errore durante l'invio della richiesta HTTP\n");
         exit(1);
     }
@@ -84,7 +77,7 @@ void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char
     // Leggi la risposta del server
     int bytes_received;
     int total_bytes = 0;
-    while ((bytes_received = read(targetHost->sockfd, response + total_bytes, BUFFER_SIZE - total_bytes - 1)) > 0) {
+    while ((bytes_received = recv(targetHost->sockfd, response + total_bytes, BUFFER_SIZE - total_bytes - 1, 0)) > 0) {
         total_bytes += bytes_received;
         if (total_bytes >= BUFFER_SIZE - 1) break;
     }
@@ -95,6 +88,9 @@ void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char
     }
 
     response[total_bytes] = '\0';
+
+    close(targetHost->sockfd);
+    targetHost->sockfd = -1;
 }
 
 //EXAMPLE USAGE

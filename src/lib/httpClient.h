@@ -25,8 +25,9 @@ typedef enum httpMethod {
 } HttpMethod;
 
 typedef struct targetHost {
-    char *hostname;
+    char *ip_addr;
     int portno;
+    struct sockaddr_in server_addr;
     int sockfd;
 } TargetHost;
 
