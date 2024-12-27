@@ -13,7 +13,7 @@ int main() {
 
     do{
         connectToHttpServer(&targetHost);
-        
+
         switch (currentPage) {
         case 0:
             sendHttpRequest(&targetHost, GET, "/", buffer);
@@ -22,12 +22,17 @@ int main() {
         case 1:
             sendHttpRequest(&targetHost, GET, "/films", buffer);
             break;
+
+        case 2:
+            // sendHttpRequest(&targetHost, GET, "/book", buffer);
+            break;
         
         default:
             break;
         }
 
-        printf("%s\n", buffer);
+        removeHttpHeaders(buffer);
+        printf("\033[1J%s\n", buffer);
         printf("\nInserisci la tua scelta: ");
         read_int(&currentPage);
     }while (currentPage != 4);

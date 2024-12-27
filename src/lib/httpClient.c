@@ -8,7 +8,7 @@ void connectToHttpServer(TargetHost *targetHost) {
         exit(1);
     }
 
-    printf("Socket creato con fd: %d\n", targetHost->sockfd);
+    // printf("Socket creato con fd: %d\n", targetHost->sockfd);
 
     targetHost->server_addr.sin_family = AF_INET;
     targetHost->server_addr.sin_port = htons(targetHost->portno);
@@ -24,6 +24,13 @@ void connectToHttpServer(TargetHost *targetHost) {
     }
 }
 
+void removeHttpHeaders(char *response) {
+    char *start = strstr(response, "\r\n\r\n");
+    if (start != NULL) {
+        start += 4;
+        memmove(response, start, strlen(start) + 1);
+    }
+}
 
 
 void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response) {

@@ -33,5 +33,6 @@ typedef struct targetHost {
 
 void connectToHttpServer(TargetHost *targetHost);
 void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response);
+void removeHttpHeaders(char *response);
 
 #endif // HTTPCLIENT_H
