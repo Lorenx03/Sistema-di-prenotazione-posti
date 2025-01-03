@@ -45,5 +45,8 @@ typedef struct {
 
 // Function to initialize the list of films
 void initFilmsList(const char *filename, Films *filmsStruct);
+void initialize_seats(Hall *hall, int rows, int columns);
+void create_halls_for_showtimes(Film *film);
+void generateHallMap(Hall *hall, char *buffer, size_t buffer_size);
 
 #endif

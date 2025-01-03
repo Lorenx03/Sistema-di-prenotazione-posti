@@ -13,6 +13,31 @@ Films cinemaFilms = {0};
 //     httpResponseBuilder(response, 200, "OK", response_body);
 // }
 
+int numberBodyToInt(char *request){
+    bool success = false;
+    int number = 0;
+    errno = 0;
+    char *endptr;
+
+    number = strtol(request, &endptr,10);
+
+    if(errno == ERANGE){
+        success = false;
+    }else if(endptr == request){
+        success = false;
+    }else if(*endptr && *endptr != '\n'){
+        success = false;
+    }else{
+        success = true;
+    }
+
+    if (success){
+        return number;
+    }else{
+        return -1;
+    }
+}
+
 void GETrootHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
 
@@ -43,25 +68,9 @@ void GETFilmsListHandler(char *request, char *response) {
 
 void GETBookShowtimesListHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
+    int selected_film = numberBodyToInt(request);
 
-    bool success = false;
-    int selected_film = 0;
-    errno = 0;
-    char *endptr;
-
-    selected_film = strtol(request, &endptr,10);
-
-    if(errno == ERANGE){
-        success = false;
-    }else if(endptr == request){
-        success = false;
-    }else if(*endptr && *endptr != '\n'){
-        success = false;
-    }else{
-        success = true;
-    }
-
-    if (success && selected_film > 0 && selected_film <= cinemaFilms.count){
+    if (selected_film > 0 && selected_film <= cinemaFilms.count){
         Film *film = &cinemaFilms.list[selected_film - 1];
         char listOfShowTimes[1000] = {0};
 
@@ -76,6 +85,35 @@ void GETBookShowtimesListHandler(char *request, char *response) {
         }
         
         snprintf(response_body, sizeof(response_body), "Lista degli orari disponibili per %s:\n%s", film->name, listOfShowTimes);
+    }else{
+        snprintf(response_body, sizeof(response_body), "Film non trovato\n");
+    }
+    
+    httpResponseBuilder(response, 200, "OK", response_body);
+}
+
+void GETFilmHallMapHandler(char *request, char *response) {
+    char response_body[MAX_RESPONSE_SIZE] = {0};
+
+    //exaple request: 1.1
+    char *saveptr;
+    char *token = strtok_r(request, ".", &saveptr);
+    int selected_film = -1, hall_index = -1;
+
+    if (token != NULL) {
+        selected_film = numberBodyToInt(token);
+        token = strtok_r(NULL, ".", &saveptr);
+        if (token != NULL) {
+            hall_index = numberBodyToInt(token);
+        }
+    }
+
+    printf("selected_film: %d\n", selected_film);
+    printf("hall_index: %d\n", hall_index);
+
+    if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
+        Film *film = &cinemaFilms.list[selected_film - 1];
+        generateHallMap(&film->halls[hall_index], response_body, sizeof(response_body));
     }else{
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
     }
@@ -100,6 +138,10 @@ int main() {
     filmsListRoute.name = "list";
     filmsListRoute.handlers[GET] = GETFilmsListHandler;
 
+    HttpRoute filmHallMapRoute = {0};
+    filmHallMapRoute.name = "map";
+    filmHallMapRoute.handlers[GET] = GETFilmHallMapHandler;
+
     HttpRoute bookShowtimesListRoute = {0};
     bookShowtimesListRoute.name = "book";
     bookShowtimesListRoute.handlers[GET] = GETBookShowtimesListHandler;
@@ -108,6 +150,7 @@ int main() {
     addHttpSubroute(&rootRoute, &filmsRoute);
     addHttpSubroute(&rootRoute, &bookShowtimesListRoute);
     addHttpSubroute(&filmsRoute, &filmsListRoute);
+    addHttpSubroute(&filmsRoute, &filmHallMapRoute);
 
     HttpServer server = {
         .port = 8090,

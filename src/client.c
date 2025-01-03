@@ -24,7 +24,7 @@ int inline countLinesOfResponse(char *response) {
     return lines;
 }
 
-void bookSeatPages(TargetHost *targetHost,int film_id) {
+void bookSeatPages(TargetHost *targetHost, int film_id) {
     int currentPage = 0;
     int choice = 0;
     char buffer[4096];
@@ -37,10 +37,26 @@ void bookSeatPages(TargetHost *targetHost,int film_id) {
             sendHttpRequest(targetHost, GET, "/book", requestBody, buffer);
             printClearedResponse(buffer);
 
-            // User input
-            printf("Scegli un orario (1-%d): ", countLinesOfResponse(buffer) - 1);
-            read_int(&choice);
+            do {
+                // User input
+                printf("Scegli un orario (1-%d): ", countLinesOfResponse(buffer) - 1);
+                read_int(&choice);
+
+                if (choice >= 1 && choice <= countLinesOfResponse(buffer) - 1) {
+                    currentPage = 1;
+                } else {
+                    printf("Scelta non valida\n");
+                }
+            } while (!currentPage);
             break;
+
+        case 1:
+            sprintf(requestBody, "%d.%d", film_id, choice);
+            sendHttpRequest(targetHost, GET, "/films/map", requestBody, buffer);
+            printClearedResponse(buffer);
+
+            // User input
+            waitForKey();
         }
     }while (currentPage != 4);
 }

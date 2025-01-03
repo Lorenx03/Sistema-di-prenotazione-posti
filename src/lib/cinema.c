@@ -50,3 +50,13 @@ void initFilmsList(const char *filename, Films *filmsStruct){
         create_halls_for_showtimes(&filmsStruct->list[i]);
     }
 }
+
+void generateHallMap(Hall *hall, char *buffer, size_t buffer_size) {
+    snprintf(buffer, buffer_size, "Mappa della sala:\n");
+    for (int i = 0; i < hall->rows; i++) {
+        for (int j = 0; j < hall->columns; j++) {
+            snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%c%d ", hall->seats[i][j].row, hall->seats[i][j].seat_number);
+        }
+        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n");
+    }
+}
