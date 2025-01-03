@@ -142,7 +142,7 @@ void free_films(Film *films, int film_count) {
 
 // Function to print film details to a buffer (for testing)
 void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) {
-    size_t offset = 0;
+    size_t offset = strlen(buffer);
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset,
             "Film %d:\n"
@@ -175,9 +175,15 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
 }
 
 // Funzione per stampare i nomi dei film
-void print_films_name(Film *films, int film_count) {
+void print_films_name(char *buffer, size_t buffer_size, Film *films, int film_count) {
+    size_t offset = strlen(buffer);
     for (int i = 0; i < film_count; i++) {
-        printf("Film %d: %s\n", i + 1,films[i].name);
+        size_t written = snprintf(buffer + offset, buffer_size - offset, "Film %d: %s\n", i + 1, films[i].name);
+        if (written < 0 || written >= buffer_size - offset) {
+            fprintf(stderr, "Error writing to buffer\n");
+            break;
+        }
+        offset += written;
     }
 }
 

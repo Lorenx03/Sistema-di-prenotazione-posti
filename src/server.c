@@ -3,6 +3,9 @@
 #include "cinema.h"
 #include "filmsCSVparser.h"
 
+// Global context
+Films cinemaFilms = {0};
+
 // DEBUG
 // void GETrootHandler(char *request, char *response) {
 //     char response_body[100];
@@ -26,8 +29,15 @@ void GETrootHandler(char *request, char *response) {
 
 void GETfilmsHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
-    Films *films = initFilmsList("films.csv");
-    print_films(response_body, MAX_RESPONSE_SIZE, films->list, films->count);
+    snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
+    print_films(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
+    httpResponseBuilder(response, 200, "OK", response_body);
+}
+
+void GETFilmsListHandler(char *request, char *response) {
+    char response_body[MAX_RESPONSE_SIZE] = {0};
+    snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
+    print_films_name(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
@@ -36,21 +46,28 @@ int main() {
     //Random seed for booking code generation
     srand(time(NULL));
     
-    HttpRoute root = {0};
-    root.name = "/";
-    root.handlers[GET] = GETrootHandler;
+    HttpRoute rootRoute = {0};
+    rootRoute.name = "/";
+    rootRoute.handlers[GET] = GETrootHandler;
 
-    HttpRoute films = {0};
-    films.name = "films";
-    films.handlers[GET] = GETfilmsHandler;
+    HttpRoute filmsRoute = {0};
+    filmsRoute.name = "films";
+    filmsRoute.handlers[GET] = GETfilmsHandler;
 
-    addHttpSubroute(&root, &films);
+    HttpRoute filmsListRoute = {0};
+    filmsListRoute.name = "list";
+    filmsListRoute.handlers[GET] = GETFilmsListHandler;
+
+    addHttpSubroute(&rootRoute, &filmsRoute);
+    addHttpSubroute(&filmsRoute, &filmsListRoute);
 
     HttpServer server = {
         .port = 8090,
         .numThreads = 1,
-        .root = &root
+        .root = &rootRoute
     };
+
+    initFilmsList("films.csv", &cinemaFilms);
 
     if (httpServerServe(&server)) {
         fprintf(stderr, "Error starting server\n");

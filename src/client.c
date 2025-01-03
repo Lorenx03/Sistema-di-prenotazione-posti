@@ -61,7 +61,14 @@ int main() {
             break;
 
         case BOOK_SEAT:
-            // sendHttpRequest(&targetHost, GET, "/book", buffer);
+            sendHttpRequest(&targetHost, GET, "/films/list", buffer);
+            printClearedResponse(buffer);
+
+            // User input
+            printf("(Premi invio per tornare al menù principale)");
+            waitForKey();
+
+            currentPage = 0;
             break;
         
         case CANCEL_BOOKING:

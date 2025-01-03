@@ -44,6 +44,6 @@ typedef struct {
 } Films;
 
 // Function to initialize the list of films
-Films *initFilmsList(const char *filename);
+void initFilmsList(const char *filename, Films *filmsStruct);
 
 #endif

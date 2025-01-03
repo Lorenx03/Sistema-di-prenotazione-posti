@@ -16,7 +16,7 @@ int count_showtimes(Film *film);
 void read_films_csv(const char *filename, Film **films, int *film_count);
 void free_films(Film *films, int film_count);
 void print_films(char *buffer, size_t buffer_size, Film *films, int film_count);
-void print_films_name(Film *films, int film_count);
+void print_films_name(char *buffer, size_t buffer_size, Film *films, int film_count);
 int count_csv_lines(const char *filename);
 
 
