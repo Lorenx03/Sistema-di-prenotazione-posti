@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 
+void waitForKey();
 void read_int(int *n);
 void read_str(char *str);
 

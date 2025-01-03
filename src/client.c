@@ -14,7 +14,7 @@ void inline printClearedResponse(char *response) {
     printf("\033[1J%s\n", response);
 }
 
-int countLinesOfResponse(char *response) {
+int inline countLinesOfResponse(char *response) {
     int lines = 0;
     for (int i = 0; i < strlen(response); i++) {
         if (response[i] == '\n') {
@@ -24,12 +24,7 @@ int countLinesOfResponse(char *response) {
     return lines;
 }
 
-void waitForKey() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
-void bookSeat(TargetHost *targetHost,int film_id) {
+void bookSeatPages(TargetHost *targetHost,int film_id) {
     int currentPage = 0;
     int choice = 0;
     char buffer[4096];
@@ -109,7 +104,7 @@ int main() {
             }while (choice < 0 || choice > film_count);
             
             if (choice != 0){
-                bookSeat(&targetHost, choice);
+                bookSeatPages(&targetHost, choice);
             }else{
                 currentPage = 0;
             }
