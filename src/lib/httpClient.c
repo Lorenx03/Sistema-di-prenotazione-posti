@@ -33,7 +33,7 @@ void removeHttpHeaders(char *response) {
 }
 
 
-void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response) {
+void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response) {
     connectToSockServer(targetHost);
 
     char buffer[BUFFER_SIZE];
@@ -72,11 +72,21 @@ void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char
             break;
     }
     
-    snprintf(buffer, sizeof(buffer),
-             "%s %s HTTP/1.1\r\n"
-             "Host: %s\r\n"
-             "Connection: close\r\n\r\n",
-             methodStr, path, targetHost->ip_addr);
+    if (body != NULL && strlen(body) > 0) {
+        snprintf(buffer, sizeof(buffer),
+                 "%s %s HTTP/1.1\r\n"
+                 "Host: %s\r\n"
+                 "Content-Length: %zu\r\n"
+                 "Connection: close\r\n\r\n"
+                 "%s",
+                 methodStr, path, targetHost->ip_addr, strlen(body), body);
+    } else {
+        snprintf(buffer, sizeof(buffer),
+                 "%s %s HTTP/1.1\r\n"
+                 "Host: %s\r\n"
+                 "Connection: close\r\n\r\n",
+                 methodStr, path, targetHost->ip_addr);
+    }
     
     if (send(targetHost->sockfd, buffer, strlen(buffer),0) < 0) {
         fprintf(stderr, "Errore durante l'invio della richiesta HTTP\n");

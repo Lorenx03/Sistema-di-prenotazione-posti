@@ -32,7 +32,7 @@ typedef struct targetHost {
 } TargetHost;
 
 void connectToSockServer(TargetHost *targetHost);
-void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response);
+void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response);
 void removeHttpHeaders(char *response);
 
 #endif // HTTPCLIENT_H

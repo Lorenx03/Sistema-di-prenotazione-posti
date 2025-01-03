@@ -41,6 +41,48 @@ void GETFilmsListHandler(char *request, char *response) {
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
+void GETBookShowtimesListHandler(char *request, char *response) {
+    char response_body[MAX_RESPONSE_SIZE] = {0};
+
+    bool success = false;
+    int selected_film = 0;
+    errno = 0;
+    char *endptr;
+
+    selected_film = strtol(request, &endptr,10);
+
+    if(errno == ERANGE){
+        success = false;
+    }else if(endptr == request){
+        success = false;
+    }else if(*endptr && *endptr != '\n'){
+        success = false;
+    }else{
+        success = true;
+    }
+
+    if (success && selected_film > 0 && selected_film <= cinemaFilms.count){
+        Film *film = &cinemaFilms.list[selected_film - 1];
+        char listOfShowTimes[1000] = {0};
+
+        int showtimeIndex = 1;
+        char *saveptr;
+        char *showtime = strtok_r(film->showtimes, ",", &saveptr);
+
+        while (showtime != NULL) {
+            snprintf(listOfShowTimes + strlen(listOfShowTimes), sizeof(listOfShowTimes) - strlen(listOfShowTimes), "%d. %s\n", showtimeIndex, showtime);
+            showtimeIndex++;
+            showtime = strtok_r(NULL, ",", &saveptr);
+        }
+        
+        snprintf(response_body, sizeof(response_body), "Lista degli orari disponibili per %s:\n%s", film->name, listOfShowTimes);
+    }else{
+        snprintf(response_body, sizeof(response_body), "Film non trovato\n");
+    }
+    
+    httpResponseBuilder(response, 200, "OK", response_body);
+}
+
 
 int main() {
     //Random seed for booking code generation
@@ -58,7 +100,13 @@ int main() {
     filmsListRoute.name = "list";
     filmsListRoute.handlers[GET] = GETFilmsListHandler;
 
+    HttpRoute bookShowtimesListRoute = {0};
+    bookShowtimesListRoute.name = "book";
+    bookShowtimesListRoute.handlers[GET] = GETBookShowtimesListHandler;
+
+
     addHttpSubroute(&rootRoute, &filmsRoute);
+    addHttpSubroute(&rootRoute, &bookShowtimesListRoute);
     addHttpSubroute(&filmsRoute, &filmsListRoute);
 
     HttpServer server = {
