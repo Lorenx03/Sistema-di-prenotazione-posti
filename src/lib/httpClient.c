@@ -1,6 +1,6 @@
 #include "httpClient.h"
 
-void connectToHttpServer(TargetHost *targetHost) {
+void connectToSockServer(TargetHost *targetHost) {
     // Crea il socket
     targetHost->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (targetHost->sockfd < 0) {
@@ -34,6 +34,8 @@ void removeHttpHeaders(char *response) {
 
 
 void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response) {
+    connectToSockServer(targetHost);
+
     char buffer[BUFFER_SIZE];
     const char *methodStr;
     

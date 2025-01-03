@@ -31,7 +31,7 @@ typedef struct targetHost {
     int sockfd;
 } TargetHost;
 
-void connectToHttpServer(TargetHost *targetHost);
+void connectToSockServer(TargetHost *targetHost);
 void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *response);
 void removeHttpHeaders(char *response);
 

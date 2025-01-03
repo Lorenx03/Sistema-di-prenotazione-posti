@@ -3,6 +3,7 @@
 #include "cinema.h"
 #include "filmsCSVparser.h"
 
+// DEBUG
 // void GETrootHandler(char *request, char *response) {
 //     char response_body[100];
 //     snprintf(response_body, sizeof(response_body), "Root - Thread ID: %ld", (long)pthread_self());
@@ -11,13 +12,6 @@
 
 void GETrootHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
-    // snprintf(response_body, sizeof(response_body),
-    //          "\n\033[1JBenvenuto al Cinema\n\n"
-    //          "Menù\n\n"
-    //          "1. Programmazione sale\n"
-    //          "2. Acquista biglietto\n"
-    //          "3. Disdire una prenotazione\n"
-    //          "4. Esci\n");
 
     snprintf(response_body, sizeof(response_body),
              "Benvenuto al Cinema\n\n"
