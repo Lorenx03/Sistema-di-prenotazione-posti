@@ -51,114 +51,121 @@ void initFilmsList(const char *filename, Films *filmsStruct){
     }
 }
 
+// ================================ HALL MAP ================================
 
-void generateHallMap(Hall *hall, char *buffer, size_t buffer_size) {
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n");
+void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
+    va_end(args);
+
+    if (written > 0) {
+        *buffer_ptr += written;
+        *remaining_size -= written;
+    }
+}
+
+void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
+    // CINEMA
+    appendToBuffer(&buffer, &remaining_size, "\n");
     for(int w = 0; w <= hall->columns * 2; w++){
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), " ");
+        appendToBuffer(&buffer, &remaining_size, " ");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "   CINEMA   \n     ");
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n");
+    appendToBuffer(&buffer, &remaining_size, "   CINEMA   \n     \n");
 
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "   ");
+    appendToBuffer(&buffer, &remaining_size, "   ");
     for (int j = 1; j <= hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%3d ", j);
+        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "    ");  // Spazio per il corridoio
+    appendToBuffer(&buffer, &remaining_size, "    ");
     for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%3d ", j);
+        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "    ");  // Spazio per il secondo corridoio
+    appendToBuffer(&buffer, &remaining_size, "    ");
     for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%3d ", j);
+        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n   ");
+    appendToBuffer(&buffer, &remaining_size, "\n   ");
+
     for (int j = 1; j <= hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+        appendToBuffer(&buffer, &remaining_size, "----");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");  // Spazio per il corridoio
+    appendToBuffer(&buffer, &remaining_size, "----");
     for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+        appendToBuffer(&buffer, &remaining_size, "----");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");  // Spazio per il secondo corridoio
+    appendToBuffer(&buffer, &remaining_size, "----");
     for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+        appendToBuffer(&buffer, &remaining_size, "----");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n");
-    
+    appendToBuffer(&buffer, &remaining_size, "\n");
 
     for (int i = 0; i < hall->rows; i++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%c | ", hall->seats[i][0].row);
+        appendToBuffer(&buffer, &remaining_size, "%c | ", hall->seats[i][0].row);
 
-        // Ciclo per la prima metà dei posti
         for (int j = 0; j < hall->columns / 3; j++) {
             if (hall->seats[i][j].is_disabled) {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;34m[D]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
             } else if (hall->seats[i][j].is_booked) {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;31m[X]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
             } else {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;32m[O]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
             }
         }
 
-        // Corridoio centrale
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "    ");  // Spazio centrale per il corridoio
+        appendToBuffer(&buffer, &remaining_size, "    ");
 
-        // Ciclo per la seconda metà dei posti
         for (int j = hall->columns / 3; j < 2 * hall->columns / 3; j++) {
             if (hall->seats[i][j].is_disabled) {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;34m[D]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
             } else if (hall->seats[i][j].is_booked) {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;31m[X]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
             } else {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;32m[O]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
             }
         }
 
-        // Secondo corridoio centrale
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "    ");  // Spazio centrale per il secondo corridoio
+        appendToBuffer(&buffer, &remaining_size, "    ");
 
-        // Ciclo per la terza sezione dei posti
         for (int j = 2 * hall->columns / 3; j < hall->columns; j++) {
             if (hall->seats[i][j].is_disabled) {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;34m[D]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
             } else if (hall->seats[i][j].is_booked) {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;31m[X]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
             } else {
-                snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\033[0;32m[O]\033[0m ");
+                appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
             }
         }
 
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "| %c\n", hall->seats[i][0].row);
+        appendToBuffer(&buffer, &remaining_size, "| %c\n", hall->seats[i][0].row);
     }
 
-    // Stampa dei trattini
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "   ");
+    appendToBuffer(&buffer, &remaining_size, "   ");
     for (int j = 1; j <= hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+        appendToBuffer(&buffer, &remaining_size, "----");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+    appendToBuffer(&buffer, &remaining_size, "----");
     for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+        appendToBuffer(&buffer, &remaining_size, "----");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+    appendToBuffer(&buffer, &remaining_size, "----");
     for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "----");
+        appendToBuffer(&buffer, &remaining_size, "----");
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n");
+    appendToBuffer(&buffer, &remaining_size, "\n");
 
-    // Stampa dei numeri corrispondenti ai posti
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "   ");
+    appendToBuffer(&buffer, &remaining_size, "   ");
     for (int j = 1; j <= hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%3d ", j);
+        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "    ");
+    appendToBuffer(&buffer, &remaining_size, "    ");
     for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%3d ", j);
+        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "    ");
+    appendToBuffer(&buffer, &remaining_size, "    ");
     for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "%3d ", j);
+        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
     }
-    snprintf(buffer + strlen(buffer), buffer_size - strlen(buffer), "\n");
+    appendToBuffer(&buffer, &remaining_size, "\n");
+    appendToBuffer(&buffer, &remaining_size, "\nLegenda: \n\033[0;32m[O]\033[0m Disponibile \n\033[0;31m[X]\033[0m Prenotato \n\033[0;34m[D]\033[0m Disabili\n");
 }
