@@ -202,7 +202,7 @@ int handleClient(int connSocketFd, HttpRoute *root){
 
 void *workerRoutine(void *params) {
     // Unpack params
-    int id = ((WorkerThreadParams *)params)->id;
+    // int id = ((WorkerThreadParams *)params)->id;
     int serverSocket = ((WorkerThreadParams *)params)->serverSocket;
     HttpRoute *root = ((WorkerThreadParams *)params)->root;
 

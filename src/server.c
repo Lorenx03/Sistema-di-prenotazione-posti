@@ -39,6 +39,7 @@ int numberBodyToInt(char *request){
 }
 
 void GETrootHandler(char *request, char *response) {
+    (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
 
     snprintf(response_body, sizeof(response_body),
@@ -53,6 +54,7 @@ void GETrootHandler(char *request, char *response) {
 }
 
 void GETfilmsHandler(char *request, char *response) {
+    (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
     print_films(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
@@ -60,6 +62,7 @@ void GETfilmsHandler(char *request, char *response) {
 }
 
 void GETFilmsListHandler(char *request, char *response) {
+    (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
     print_films_name(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);

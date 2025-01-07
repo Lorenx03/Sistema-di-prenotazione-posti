@@ -16,7 +16,7 @@ void inline printClearedResponse(char *response) {
 
 int inline countLinesOfResponse(char *response) {
     int lines = 0;
-    for (int i = 0; i < strlen(response); i++) {
+    for (size_t i = 0; i < strlen(response); i++) {
         if (response[i] == '\n') {
             lines++;
         }
