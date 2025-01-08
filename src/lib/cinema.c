@@ -65,6 +65,38 @@ void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *forma
     }
 }
 
+void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns) {
+    appendToBuffer(buffer, remaining_size, "   ");
+    for (int j = 1; j <= columns / 3; j++) {
+        appendToBuffer(buffer, remaining_size, "%3d ", j);
+    }
+    appendToBuffer(buffer, remaining_size, "    ");
+    for (int j = columns / 3 + 1; j <= 2 * columns / 3; j++) {
+        appendToBuffer(buffer, remaining_size, "%3d ", j);
+    }
+    appendToBuffer(buffer, remaining_size, "    ");
+    for (int j = 2 * columns / 3 + 1; j <= columns; j++) {
+        appendToBuffer(buffer, remaining_size, "%3d ", j);
+    }
+    appendToBuffer(buffer, remaining_size, "\n");
+}
+
+void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns) {
+    appendToBuffer(buffer, remaining_size, "   ");
+    for (int j = 1; j <= columns / 3; j++) {
+        appendToBuffer(buffer, remaining_size, "----");
+    }
+    appendToBuffer(buffer, remaining_size, "----");
+    for (int j = columns / 3 + 1; j <= 2 * columns / 3; j++) {
+        appendToBuffer(buffer, remaining_size, "----");
+    }
+    appendToBuffer(buffer, remaining_size, "----");
+    for (int j = 2 * columns / 3 + 1; j <= columns; j++) {
+        appendToBuffer(buffer, remaining_size, "----");
+    }
+    appendToBuffer(buffer, remaining_size, "\n");
+}
+
 void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
     // CINEMA
     appendToBuffer(&buffer, &remaining_size, "\n");
@@ -73,33 +105,10 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
     }
     appendToBuffer(&buffer, &remaining_size, "   CINEMA   \n     \n");
 
-    appendToBuffer(&buffer, &remaining_size, "   ");
-    for (int j = 1; j <= hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
-    }
-    appendToBuffer(&buffer, &remaining_size, "    ");
-    for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
-    }
-    appendToBuffer(&buffer, &remaining_size, "    ");
-    for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
-    }
-    appendToBuffer(&buffer, &remaining_size, "\n   ");
+    drawSeatNumbers(&buffer, &remaining_size, hall->columns);
+    drawSeparatorLine(&buffer, &remaining_size, hall->columns);
 
-    for (int j = 1; j <= hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "----");
-    }
-    appendToBuffer(&buffer, &remaining_size, "----");
-    for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "----");
-    }
-    appendToBuffer(&buffer, &remaining_size, "----");
-    for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        appendToBuffer(&buffer, &remaining_size, "----");
-    }
-    appendToBuffer(&buffer, &remaining_size, "\n");
-
+    // Seats
     for (int i = 0; i < hall->rows; i++) {
         appendToBuffer(&buffer, &remaining_size, "%c | ", hall->seats[i][0].row);
 
@@ -140,32 +149,9 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
         appendToBuffer(&buffer, &remaining_size, "| %c\n", hall->seats[i][0].row);
     }
 
-    appendToBuffer(&buffer, &remaining_size, "   ");
-    for (int j = 1; j <= hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "----");
-    }
-    appendToBuffer(&buffer, &remaining_size, "----");
-    for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "----");
-    }
-    appendToBuffer(&buffer, &remaining_size, "----");
-    for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        appendToBuffer(&buffer, &remaining_size, "----");
-    }
-    appendToBuffer(&buffer, &remaining_size, "\n");
+    drawSeparatorLine(&buffer, &remaining_size, hall->columns);
+    drawSeatNumbers(&buffer, &remaining_size, hall->columns);
 
-    appendToBuffer(&buffer, &remaining_size, "   ");
-    for (int j = 1; j <= hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
-    }
-    appendToBuffer(&buffer, &remaining_size, "    ");
-    for (int j = hall->columns / 3 + 1; j <= 2 * hall->columns / 3; j++) {
-        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
-    }
-    appendToBuffer(&buffer, &remaining_size, "    ");
-    for (int j = 2 * hall->columns / 3 + 1; j <= hall->columns; j++) {
-        appendToBuffer(&buffer, &remaining_size, "%3d ", j);
-    }
-    appendToBuffer(&buffer, &remaining_size, "\n");
+    // Legend
     appendToBuffer(&buffer, &remaining_size, "\nLegenda: \n\033[0;32m[O]\033[0m Disponibile \n\033[0;31m[X]\033[0m Prenotato \n\033[0;34m[D]\033[0m Disabili\n");
 }
