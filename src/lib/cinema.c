@@ -98,6 +98,8 @@ void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns)
 }
 
 void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
+    appendToBuffer(&buffer, &remaining_size, "%d.%d", hall->rows, hall->columns);
+
     // CINEMA
     appendToBuffer(&buffer, &remaining_size, "\n");
     for(int w = 0; w <= hall->columns * 2; w++){

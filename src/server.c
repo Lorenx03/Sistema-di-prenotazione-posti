@@ -2,6 +2,7 @@
 #include "httpServer.h"
 #include "cinema.h"
 #include "filmsCSVparser.h"
+#include "utils.h"
 
 // Global context
 Films cinemaFilms = {0};
@@ -12,31 +13,6 @@ Films cinemaFilms = {0};
 //     snprintf(response_body, sizeof(response_body), "Root - Thread ID: %ld", (long)pthread_self());
 //     httpResponseBuilder(response, 200, "OK", response_body);
 // }
-
-int numberBodyToInt(char *request){
-    bool success = false;
-    int number = 0;
-    errno = 0;
-    char *endptr;
-
-    number = strtol(request, &endptr,10);
-
-    if(errno == ERANGE){
-        success = false;
-    }else if(endptr == request){
-        success = false;
-    }else if(*endptr && *endptr != '\n'){
-        success = false;
-    }else{
-        success = true;
-    }
-
-    if (success){
-        return number;
-    }else{
-        return -1;
-    }
-}
 
 void GETrootHandler(char *request, char *response) {
     (void)request;
@@ -71,7 +47,7 @@ void GETFilmsListHandler(char *request, char *response) {
 
 void GETBookShowtimesListHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
-    int selected_film = numberBodyToInt(request);
+    int selected_film = safeStrToInt(request);
 
     if (selected_film > 0 && selected_film <= cinemaFilms.count){
         Film *film = &cinemaFilms.list[selected_film - 1];
@@ -104,10 +80,10 @@ void GETFilmHallMapHandler(char *request, char *response) {
     int selected_film = -1, hall_index = -1;
 
     if (token != NULL) {
-        selected_film = numberBodyToInt(token);
+        selected_film = safeStrToInt(token);
         token = strtok_r(NULL, ".", &saveptr);
         if (token != NULL) {
-            hall_index = numberBodyToInt(token);
+            hall_index = safeStrToInt(token);
         }
     }
 

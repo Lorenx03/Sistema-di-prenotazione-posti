@@ -1,5 +1,6 @@
 #include "httpClient.h"
 #include "userInput.h"
+#include "utils.h"
 
 enum Pages {
     MAIN_MENU = 0,
@@ -26,23 +27,36 @@ int inline countLinesOfResponse(char *response) {
 
 void bookSeatPages(TargetHost *targetHost, int film_id) {
     int currentPage = 0;
-    int choice = 0;
-    char buffer[4096];
+
+    int numberOfSeats = 0;
+    int showTimeChoice = 0;
+    char seatChoice[1024] = {0};
+
+
+    char response[4096];
     char requestBody[4096];
+
+    char hallInfo[6] = {0};
+    size_t hallInfoOffset = 0;
+    int hallColums = -1;
+    int hallRows = -1;
+
+    char *saveptr;
+    char *token;
 
     do{
         switch (currentPage) {
         case 0:
             sprintf(requestBody, "%d", film_id);
-            sendHttpRequest(targetHost, GET, "/book", requestBody, buffer);
-            printClearedResponse(buffer);
+            sendHttpRequest(targetHost, GET, "/book", requestBody, response);
+            printClearedResponse(response);
 
             do {
                 // User input
-                printf("Scegli un orario (1-%d): ", countLinesOfResponse(buffer) - 1);
-                read_int(&choice);
+                printf("Scegli un orario (1-%d): ", countLinesOfResponse(response) - 1);
+                read_int(&showTimeChoice);
 
-                if (choice >= 1 && choice <= countLinesOfResponse(buffer) - 1) {
+                if (showTimeChoice >= 1 && showTimeChoice <= countLinesOfResponse(response) - 1) {
                     currentPage = 1;
                 } else {
                     printf("Scelta non valida\n");
@@ -51,11 +65,57 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             break;
 
         case 1:
-            sprintf(requestBody, "%d.%d", film_id, choice);
-            sendHttpRequest(targetHost, GET, "/films/map", requestBody, buffer);
-            printClearedResponse(buffer);
+            sprintf(requestBody, "%d.%d", film_id, showTimeChoice);
+            sendHttpRequest(targetHost, GET, "/films/map", requestBody, response);
+            removeHttpHeaders(response);
 
-            // User input
+            hallInfoOffset = strcspn(response, "\n");
+            if(hallInfoOffset <= 5 && hallInfoOffset >= 3){
+                strncpy(hallInfo, response, hallInfoOffset);
+                memmove(response, response + hallInfoOffset + 1, strlen(response) - hallInfoOffset);
+
+                token = strtok_r(hallInfo, ".", &saveptr);
+                if (token != NULL) {
+                    hallRows = safeStrToInt(token);
+                    token = strtok_r(NULL, ".", &saveptr);
+                    if (token != NULL) {
+                        hallColums = safeStrToInt(token);
+                    }
+                }
+            }else{
+                printf("Errore nella lettura delle informazioni della sala\n");
+                currentPage = 0;
+                break;
+            }
+
+            printf("\033[1J%s\n", response);
+            printf("righe: %d, colonne: %d\n", hallRows, hallColums);
+
+            printf("Quanti posti vuoi prenotare (1-%d)? ", 4);
+            read_int(&numberOfSeats);
+
+            for (int i = 1; i <= numberOfSeats; i++){
+                while (1){
+                    printf("Inserisci la riga e la colonna del posto %d (Es: A7): ", i);
+                    read_str(seatChoice);
+
+                    if (
+                        strlen(seatChoice) == 2 && 
+                        seatChoice[0] >= 'A' &&
+                        seatChoice[0] <= ('A'+ hallRows) && 
+                        safeStrToInt(&seatChoice[1]) >= 1 &&
+                        safeStrToInt(&seatChoice[1]) <= hallColums
+                    ) {
+                        break;
+                    }else{
+                        printf("Posto non valido\n");
+                        continue;
+                    }
+                } 
+                
+                printf("Posto %d: %s\n", i, seatChoice);
+            }
+
             waitForKey();
         }
     }while (currentPage != 4);
