@@ -47,7 +47,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
     do{
         switch (currentPage) {
         case 0:
-            sprintf(requestBody, "%d", film_id);
+            snprintf(requestBody, sizeof(requestBody), "%d", film_id);
             sendHttpRequest(targetHost, GET, "/book", requestBody, response);
             printClearedResponse(response);
 
@@ -65,7 +65,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             break;
 
         case 1:
-            sprintf(requestBody, "%d.%d", film_id, showTimeChoice);
+            snprintf(requestBody, sizeof(requestBody), "%d.%d.", film_id, showTimeChoice);
             sendHttpRequest(targetHost, GET, "/films/map", requestBody, response);
             removeHttpHeaders(response);
 
@@ -121,9 +121,11 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     }
                 } 
                 
+                strncat(requestBody, seatChoice, 2);
                 printf("Posto %d: %s\n", i, seatChoice);
             }
 
+            printf("Richiesta: %s\n", requestBody);
             waitForKey();
         }
     }while (currentPage != 4);
