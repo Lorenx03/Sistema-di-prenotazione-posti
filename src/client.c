@@ -91,8 +91,16 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             printf("\033[1J%s\n", response);
             printf("righe: %d, colonne: %d\n", hallRows, hallColums);
 
-            printf("Quanti posti vuoi prenotare (1-%d)? ", 4);
-            read_int(&numberOfSeats);
+            while(1){
+                printf("Quanti posti vuoi prenotare (1-%d)? ", 4);
+                read_int(&numberOfSeats);
+
+                if (numberOfSeats >= 1 && numberOfSeats <= 4) {
+                    break;
+                }else{
+                    printf("Numero di posti non valido\n");
+                }
+            }
 
             for (int i = 1; i <= numberOfSeats; i++){
                 while (1){
