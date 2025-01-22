@@ -7,12 +7,17 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+typedef enum {
+    FREE,
+    BOOKED,
+    DISABLED
+} SeatState;
+
 // Struttura per il posto
 typedef struct {
     char row;
     int seat_number;
-    int is_booked;
-    int is_disabled;
+    SeatState state;
     int booking_code;
 } Seat;
 

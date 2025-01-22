@@ -6,11 +6,10 @@ void initialize_seats(Hall *hall, int rows, int columns) {
         for (int j = 0; j < columns; j++) {
             hall->seats[i][j].row = 'A' + i;
             hall->seats[i][j].seat_number = j + 1;
-            hall->seats[i][j].is_booked = 0;
-            hall->seats[i][j].is_disabled = 0;
+            hall->seats[i][j].state = !(i == (rows-1) && j >= 0 && j <= 2) ? FREE : DISABLED;
             hall->seats[i][j].booking_code = 0;
         }
-    }
+    }    
 }
 
 void create_halls_for_showtimes(Film *film) {
@@ -67,34 +66,19 @@ void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *forma
 
 void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns) {
     appendToBuffer(buffer, remaining_size, "   ");
-    for (int j = 1; j <= columns / 3; j++) {
+    for (int j = 1; j <= columns; j++) {
         appendToBuffer(buffer, remaining_size, "%3d ", j);
     }
     appendToBuffer(buffer, remaining_size, "    ");
-    for (int j = columns / 3 + 1; j <= 2 * columns / 3; j++) {
-        appendToBuffer(buffer, remaining_size, "%3d ", j);
-    }
-    appendToBuffer(buffer, remaining_size, "    ");
-    for (int j = 2 * columns / 3 + 1; j <= columns; j++) {
-        appendToBuffer(buffer, remaining_size, "%3d ", j);
-    }
     appendToBuffer(buffer, remaining_size, "\n");
 }
 
 void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns) {
-    appendToBuffer(buffer, remaining_size, "   ");
-    for (int j = 1; j <= columns / 3; j++) {
+    appendToBuffer(buffer, remaining_size, "  -");
+    for (int j = 1; j <= columns; j++) {
         appendToBuffer(buffer, remaining_size, "----");
     }
-    appendToBuffer(buffer, remaining_size, "----");
-    for (int j = columns / 3 + 1; j <= 2 * columns / 3; j++) {
-        appendToBuffer(buffer, remaining_size, "----");
-    }
-    appendToBuffer(buffer, remaining_size, "----");
-    for (int j = 2 * columns / 3 + 1; j <= columns; j++) {
-        appendToBuffer(buffer, remaining_size, "----");
-    }
-    appendToBuffer(buffer, remaining_size, "\n");
+    appendToBuffer(buffer, remaining_size, "--\n");
 }
 
 void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
@@ -103,9 +87,9 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
     // CINEMA
     appendToBuffer(&buffer, &remaining_size, "\n");
     for(int w = 0; w <= hall->columns * 2; w++){
-        appendToBuffer(&buffer, &remaining_size, " ");
+        appendToBuffer(&buffer, &remaining_size," ");
     }
-    appendToBuffer(&buffer, &remaining_size, "   CINEMA   \n     \n");
+    appendToBuffer(&buffer, &remaining_size, "CINEMA\n\n");
 
     drawSeatNumbers(&buffer, &remaining_size, hall->columns);
     drawSeparatorLine(&buffer, &remaining_size, hall->columns);
@@ -114,41 +98,32 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
     for (int i = 0; i < hall->rows; i++) {
         appendToBuffer(&buffer, &remaining_size, "%c | ", hall->seats[i][0].row);
 
-        for (int j = 0; j < hall->columns / 3; j++) {
-            if (hall->seats[i][j].is_disabled) {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
-            } else if (hall->seats[i][j].is_booked) {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
-            } else {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
-            }
-        }
+        for (int j = 0; j < hall->columns; j++) {
+            switch (hall->seats[i][j].state){
+                case FREE:
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
+                    break;
+                case BOOKED:
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
+                    break;
+                case DISABLED:
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
+                    break;
 
-        appendToBuffer(&buffer, &remaining_size, "    ");
-
-        for (int j = hall->columns / 3; j < 2 * hall->columns / 3; j++) {
-            if (hall->seats[i][j].is_disabled) {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
-            } else if (hall->seats[i][j].is_booked) {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
-            } else {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
-            }
-        }
-
-        appendToBuffer(&buffer, &remaining_size, "    ");
-
-        for (int j = 2 * hall->columns / 3; j < hall->columns; j++) {
-            if (hall->seats[i][j].is_disabled) {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
-            } else if (hall->seats[i][j].is_booked) {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
-            } else {
-                appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
+                default:
+                    break;
             }
         }
 
         appendToBuffer(&buffer, &remaining_size, "| %c\n", hall->seats[i][0].row);
+
+        if(i == hall->rows/3){
+            appendToBuffer(&buffer, &remaining_size, "  | ", hall->seats[i][0].row);
+            for (int j = 0; j < hall->columns; j++) {
+                appendToBuffer(&buffer, &remaining_size, "    ");
+            }
+            appendToBuffer(&buffer, &remaining_size, "|\n");
+        }
     }
 
     drawSeparatorLine(&buffer, &remaining_size, hall->columns);
