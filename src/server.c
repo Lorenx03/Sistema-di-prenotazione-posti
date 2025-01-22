@@ -68,6 +68,7 @@ void GETBookShowtimesListHandler(char *request, char *response) {
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
     }
     
+    printf("response_body: %s\n", response_body);
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
@@ -92,11 +93,12 @@ void GETFilmHallMapHandler(char *request, char *response) {
 
     if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
         Film *film = &cinemaFilms.list[selected_film - 1];
-        generateHallMap(&film->halls[hall_index], response_body, sizeof(response_body));
+        generateHallMapResponse(&film->halls[hall_index], response_body, sizeof(response_body));
     }else{
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
     }
     
+    printf("response_body: %s\n", response_body);
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 

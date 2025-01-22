@@ -1,6 +1,7 @@
 #include "httpClient.h"
 #include "userInput.h"
 #include "utils.h"
+#include "cinemaMap.h"
 
 enum Pages {
     MAIN_MENU = 0,
@@ -34,8 +35,8 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
     int showTimeChoice = 0;
     char seatChoice[1024] = {0};
 
-    char hallInfo[6] = {0};
-    size_t hallInfoOffset = 0;
+    char hallMap[4096] = {0};
+
     int hallColums = -1;
     int hallRows = -1;
 
@@ -67,26 +68,26 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             sendHttpRequest(targetHost, GET, "/films/map", requestBody, response);
             removeHttpHeaders(response);
 
-            hallInfoOffset = strcspn(response, "\n");
-            if(hallInfoOffset <= 5 && hallInfoOffset >= 3){
-                strncpy(hallInfo, response, hallInfoOffset);
-                memmove(response, response + hallInfoOffset + 1, strlen(response) - hallInfoOffset);
-
-                token = strtok_r(hallInfo, ".", &saveptr);
+            token = strtok_r(response, ".", &saveptr);
+            if (token != NULL) {
+                hallRows = safeStrToInt(token);
+                token = strtok_r(NULL, ".", &saveptr);
                 if (token != NULL) {
-                    hallRows = safeStrToInt(token);
+                    hallColums = safeStrToInt(token);
                     token = strtok_r(NULL, ".", &saveptr);
                     if (token != NULL) {
-                        hallColums = safeStrToInt(token);
+                        generateHallMap(token, hallMap, sizeof(hallMap), hallRows, hallColums);
                     }
                 }
-            }else{
-                printf("Errore nella lettura delle informazioni della sala\n");
-                currentPage = 0;
-                break;
             }
 
-            printf("\033[1J%s\n", response);
+            if (hallColums == -1 || hallRows == -1 || strlen(hallMap) == 0) {
+                printf("Errore nella lettura della mappa della sala\n");
+                currentPage = 0;
+                return;
+            }
+                
+            printf("\033[1J%s\n", hallMap);
             printf("righe: %d, colonne: %d\n", hallRows, hallColums);
 
             while(1){

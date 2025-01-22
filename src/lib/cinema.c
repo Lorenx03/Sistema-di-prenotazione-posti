@@ -1,5 +1,6 @@
 #include "cinema.h"
 #include "filmsCSVparser.h"
+#include "utils.h"
 
 void initialize_seats(Hall *hall, int rows, int columns) {
     for (int i = 0; i < rows; i++) {
@@ -51,95 +52,20 @@ void initFilmsList(const char *filename, Films *filmsStruct){
 }
 
 
-
-
 // ================================ HALL MAP ================================
 
-void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
-    va_end(args);
+void generateHallMapResponse(Hall *hall, char *buffer, size_t remaining_size) {
+    appendToBuffer(&buffer, &remaining_size, "%d.%d.", hall->rows, hall->columns);
 
-    if (written > 0) {
-        *buffer_ptr += written;
-        *remaining_size -= written;
-    }
-}
-
-void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns) {
-    appendToBuffer(buffer, remaining_size, "    ");
-    for (int j = 1; j <= columns; j++) {
-        if (j<9)
-            appendToBuffer(buffer, remaining_size, "%3d  ", j);
-        else
-            appendToBuffer(buffer, remaining_size, "%3d   ", j);
-    }
-    appendToBuffer(buffer, remaining_size, "\n");
-}
-
-void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns) {
-    appendToBuffer(buffer, remaining_size, "  --");
-    for (int j = 1; j <= columns; j++) {
-        if (j<9)
-            appendToBuffer(buffer, remaining_size, "-----");
-        else
-            appendToBuffer(buffer, remaining_size, "------");
-    }
-    appendToBuffer(buffer, remaining_size, "\n");
-}
-
-void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
-    appendToBuffer(&buffer, &remaining_size, "%d.%d", hall->rows, hall->columns);
-
-    // CINEMA
-    appendToBuffer(&buffer, &remaining_size, "\n");
-    for(int w = 0; w <= hall->columns * 13/5; w++){
-        appendToBuffer(&buffer, &remaining_size," ");
-    }
-    appendToBuffer(&buffer, &remaining_size, "CINEMA\n\n");
-
-    drawSeatNumbers(&buffer, &remaining_size, hall->columns);
-    drawSeparatorLine(&buffer, &remaining_size, hall->columns);
-
-    // Seats
-    for (int i = 0; i < hall->rows; i++) {
-        appendToBuffer(&buffer, &remaining_size, "%c | ", hall->seats[i][0].row);
-
-        for (int j = 0; j < hall->columns; j++) {
-            switch (hall->seats[i][j].state){
-                case FREE:
-                    appendToBuffer(&buffer, &remaining_size, "\033[0;32m[%c%d]\033[0m ", hall->seats[i][0].row, j+1);
-                    break;
-                case BOOKED:
-                    appendToBuffer(&buffer, &remaining_size, "\033[0;31m[%c%d]\033[0m ", hall->seats[i][0].row, j+1);
-                    break;
-                case DISABLED:
-                    appendToBuffer(&buffer, &remaining_size, "\033[0;34m[%c%d]\033[0m ", hall->seats[i][0].row, j+1);
-                    break;
-
-                default:
-                    break;
+    for (int r = 0; r < hall->rows; r++){
+        for(int c = 0; c < hall->columns; c++){
+            if (remaining_size > 0) {
+                *buffer = '0' + hall->seats[r][c].state;
+                buffer++;
+                remaining_size--;
             }
         }
-
-        appendToBuffer(&buffer, &remaining_size, "| %c\n", hall->seats[i][0].row);
-
-        if(i == hall->rows/3){
-            appendToBuffer(&buffer, &remaining_size, "  |");
-            for (int j = 1; j <= hall->columns; j++) {
-                if (j<9)
-                    appendToBuffer(&buffer, &remaining_size, "     ");
-                else
-                    appendToBuffer(&buffer, &remaining_size, "      ");
-            }
-            appendToBuffer(&buffer, &remaining_size, "|\n");
-        }
     }
 
-    drawSeparatorLine(&buffer, &remaining_size, hall->columns);
-    drawSeatNumbers(&buffer, &remaining_size, hall->columns);
-
-    // Legend
-    appendToBuffer(&buffer, &remaining_size, "\nLegenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n");
+    *buffer = '\0';
 }
