@@ -50,6 +50,9 @@ void initFilmsList(const char *filename, Films *filmsStruct){
     }
 }
 
+
+
+
 // ================================ HALL MAP ================================
 
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
@@ -65,20 +68,25 @@ void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *forma
 }
 
 void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns) {
-    appendToBuffer(buffer, remaining_size, "   ");
-    for (int j = 1; j <= columns; j++) {
-        appendToBuffer(buffer, remaining_size, "%3d ", j);
-    }
     appendToBuffer(buffer, remaining_size, "    ");
+    for (int j = 1; j <= columns; j++) {
+        if (j<9)
+            appendToBuffer(buffer, remaining_size, "%3d  ", j);
+        else
+            appendToBuffer(buffer, remaining_size, "%3d   ", j);
+    }
     appendToBuffer(buffer, remaining_size, "\n");
 }
 
 void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns) {
-    appendToBuffer(buffer, remaining_size, "  -");
+    appendToBuffer(buffer, remaining_size, "  --");
     for (int j = 1; j <= columns; j++) {
-        appendToBuffer(buffer, remaining_size, "----");
+        if (j<9)
+            appendToBuffer(buffer, remaining_size, "-----");
+        else
+            appendToBuffer(buffer, remaining_size, "------");
     }
-    appendToBuffer(buffer, remaining_size, "--\n");
+    appendToBuffer(buffer, remaining_size, "\n");
 }
 
 void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
@@ -86,7 +94,7 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
 
     // CINEMA
     appendToBuffer(&buffer, &remaining_size, "\n");
-    for(int w = 0; w <= hall->columns * 2; w++){
+    for(int w = 0; w <= hall->columns * 13/5; w++){
         appendToBuffer(&buffer, &remaining_size," ");
     }
     appendToBuffer(&buffer, &remaining_size, "CINEMA\n\n");
@@ -101,13 +109,13 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
         for (int j = 0; j < hall->columns; j++) {
             switch (hall->seats[i][j].state){
                 case FREE:
-                    appendToBuffer(&buffer, &remaining_size, "\033[0;32m[O]\033[0m ");
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;32m[%c%d]\033[0m ", hall->seats[i][0].row, j+1);
                     break;
                 case BOOKED:
-                    appendToBuffer(&buffer, &remaining_size, "\033[0;31m[X]\033[0m ");
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;31m[%c%d]\033[0m ", hall->seats[i][0].row, j+1);
                     break;
                 case DISABLED:
-                    appendToBuffer(&buffer, &remaining_size, "\033[0;34m[D]\033[0m ");
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;34m[%c%d]\033[0m ", hall->seats[i][0].row, j+1);
                     break;
 
                 default:
@@ -118,9 +126,12 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
         appendToBuffer(&buffer, &remaining_size, "| %c\n", hall->seats[i][0].row);
 
         if(i == hall->rows/3){
-            appendToBuffer(&buffer, &remaining_size, "  | ", hall->seats[i][0].row);
-            for (int j = 0; j < hall->columns; j++) {
-                appendToBuffer(&buffer, &remaining_size, "    ");
+            appendToBuffer(&buffer, &remaining_size, "  |");
+            for (int j = 1; j <= hall->columns; j++) {
+                if (j<9)
+                    appendToBuffer(&buffer, &remaining_size, "     ");
+                else
+                    appendToBuffer(&buffer, &remaining_size, "      ");
             }
             appendToBuffer(&buffer, &remaining_size, "|\n");
         }
@@ -130,5 +141,5 @@ void generateHallMap(Hall *hall, char *buffer, size_t remaining_size) {
     drawSeatNumbers(&buffer, &remaining_size, hall->columns);
 
     // Legend
-    appendToBuffer(&buffer, &remaining_size, "\nLegenda: \n\033[0;32m[O]\033[0m Disponibile \n\033[0;31m[X]\033[0m Prenotato \n\033[0;34m[D]\033[0m Disabili\n");
+    appendToBuffer(&buffer, &remaining_size, "\nLegenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n");
 }

@@ -26,15 +26,13 @@ int inline countLinesOfResponse(char *response) {
 }
 
 void bookSeatPages(TargetHost *targetHost, int film_id) {
+    char response[4096];
+    char requestBody[4096];
     int currentPage = 0;
 
     int numberOfSeats = 0;
     int showTimeChoice = 0;
     char seatChoice[1024] = {0};
-
-
-    char response[4096];
-    char requestBody[4096];
 
     char hallInfo[6] = {0};
     size_t hallInfoOffset = 0;
