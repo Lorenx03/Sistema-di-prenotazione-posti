@@ -4,6 +4,9 @@
 #include "filmsCSVparser.h"
 #include "utils.h"
 
+#define COLOR_BOLD  "\e[1m"
+#define COLOR_OFF   "\e[m"
+
 // Global context
 Films cinemaFilms = {0};
 
@@ -55,7 +58,8 @@ void GETBookShowtimesListHandler(char *request, char *response) {
 
         int showtimeIndex = 1;
         char *saveptr;
-        char *showtime = strtok_r(film->showtimes, ",", &saveptr);
+        char *temp = strdup(film->showtimes);
+        char *showtime = strtok_r(temp, ",", &saveptr);
 
         while (showtime != NULL) {
             snprintf(listOfShowTimes + strlen(listOfShowTimes), sizeof(listOfShowTimes) - strlen(listOfShowTimes), "%d. %s\n", showtimeIndex, showtime);
@@ -63,7 +67,8 @@ void GETBookShowtimesListHandler(char *request, char *response) {
             showtime = strtok_r(NULL, ",", &saveptr);
         }
         
-        snprintf(response_body, sizeof(response_body), "Lista degli orari disponibili per %s:\n%s", film->name, listOfShowTimes);
+        snprintf(response_body, sizeof(response_body), "Lista degli orari disponibili per: "COLOR_BOLD"%s"COLOR_OFF"\n%s", film->name, listOfShowTimes);
+        free(temp);
     }else{
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
     }

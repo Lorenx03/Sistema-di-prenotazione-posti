@@ -9,6 +9,7 @@
 #include <stdarg.h>
 
 int safeStrToInt(char *buff);
+void getLine(char* str, int n, char* buffer, size_t buffer_size);
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...);
 
 #endif

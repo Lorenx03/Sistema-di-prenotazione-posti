@@ -25,6 +25,34 @@ int safeStrToInt(char *buff){
     }
 }
 
+void getLine(char* str, int n, char* buffer, size_t buffer_size) {
+    int current_line = 1;
+    const char* start = str;
+    const char* end;
+
+    while (*start && current_line < n) {
+        if (*start == '\n') {
+            current_line++;
+        }
+        start++;
+    }
+
+    if (current_line == n) {
+        end = strchr(start, '\n');
+        if (!end) {
+            end = str + strlen(str);
+        }
+        size_t len = end - start;
+        if (len >= buffer_size) {
+            len = buffer_size - 1;
+        }
+        strncpy(buffer, start, len);
+        buffer[len] = '\0';
+    } else {
+        buffer[0] = '\0';
+    }    
+}
+
 
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
     va_list args;

@@ -3,6 +3,19 @@
 #include "cinema.h"
 
 // ================================ HALL MAP ================================
+void centerMapText(int columns, const char *format, ...) {
+    char text[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(text, sizeof(text), format, args);
+    va_end(args);
+
+    int padding = (columns - strlen(text)) / 2;
+    for (int i = 0; i < padding; i++) {
+        printf(" ");
+    }
+    printf("%s", text);
+}
 
 void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns) {
     appendToBuffer(buffer, remaining_size, "    ");

@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+void centerMapText(int columns, const char *format, ...);
 void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns);
 void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns);
 void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, int columns);
