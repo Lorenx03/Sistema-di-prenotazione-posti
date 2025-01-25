@@ -10,7 +10,8 @@
 typedef enum {
     FREE,
     BOOKED,
-    DISABLED
+    DISABLED,
+    SELECTED
 } SeatState;
 
 // Struttura per il posto

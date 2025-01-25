@@ -39,7 +39,7 @@ void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns)
     appendToBuffer(buffer, remaining_size, "\n");
 }
 
-void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, int columns){ 
+void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, int columns){
     // CINEMA
     drawSeatNumbers(&buffer, &remaining_size, columns);
     drawSeparatorLine(&buffer, &remaining_size, columns);
@@ -58,6 +58,9 @@ void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, i
                     break;
                 case DISABLED:
                     appendToBuffer(&buffer, &remaining_size, "\033[0;34m[%c%d]\033[0m ", 'A'+i, j+1);
+                    break;
+                case SELECTED:
+                    appendToBuffer(&buffer, &remaining_size, "\033[0;33m{%c%d}\033[0m ", 'A'+i, j+1);
                     break;
 
                 default:
@@ -81,7 +84,4 @@ void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, i
 
     drawSeparatorLine(&buffer, &remaining_size, columns);
     drawSeatNumbers(&buffer, &remaining_size, columns);
-
-    // Legend
-    appendToBuffer(&buffer, &remaining_size, "\nLegenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n");
 }

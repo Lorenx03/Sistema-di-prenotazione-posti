@@ -26,6 +26,29 @@ int inline countLinesOfResponse(char *response) {
     return lines;
 }
 
+void parseSeat(char *seat, char *row, int *column) {
+    if(seat == NULL || row == NULL || column == NULL){
+        fprintf(stderr, "parseSeat: NULL pointer\n");
+        return;
+    };
+
+    if (strlen(seat) < 2 || strlen(seat) > 3) {
+        fprintf(stderr, "parseSeat: Invalid seat format\n");
+        strncpy(seat, "000", 1);
+        *row = '0';
+        *column = 0;
+        return;
+    }
+    
+    char number[3] = {0};
+
+    *row = seat[0];
+    strncpy(number, &seat[1], 2);
+    *column = safeStrToInt(number);
+}
+
+
+
 void bookSeatPages(TargetHost *targetHost, int film_id) {
     char response[4096];
     char requestBody[4096];
@@ -35,9 +58,13 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
     int showTimeChoice = 0;
     char filmTitle[1024] = {0};
     char filmShowtime[1024] = {0};
-    char seatChoice[1024] = {0};
 
-    char hallMap[4096] = {0};
+    char seatChoice[1024] = {0};
+    char seatChoiceRow = 0;
+    int seatChoiceColumn = 0;
+
+    char hallMap[2048] = {0};
+    char hallMapBuff[4096] = {0};
     char hallMapMostWideLine[512] = {0};
 
     int hallColums = -1;
@@ -73,7 +100,6 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     currentPage = 1;
                 } else if (showTimeChoice == 0) {
                     currentPage = 4;
-                    break;
                 }else{
                     printf("Scelta non valida\n");
                 }
@@ -81,7 +107,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             break;
 
         case 1:
-            snprintf(requestBody, sizeof(requestBody), "%d.%d.", film_id, showTimeChoice);
+            snprintf(requestBody, sizeof(requestBody), "%d.%d", film_id, showTimeChoice);
             sendHttpRequest(targetHost, GET, "/films/map", requestBody, response);
             removeHttpHeaders(response);
 
@@ -93,25 +119,27 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     hallColums = safeStrToInt(token);
                     token = strtok_r(NULL, ".", &saveptr);
                     if (token != NULL) {
-                        generateHallMap(token, hallMap, sizeof(hallMap), hallRows, hallColums);
+                        strncpy(hallMap, token, sizeof(hallMap));
+                        generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
                     }
                 }
             }
 
-            if (hallColums == -1 || hallRows == -1 || strlen(hallMap) == 0) {
+            if (hallColums == -1 || hallRows == -1 || strlen(hallMapBuff) == 0) {
                 printf("Errore nella lettura della mappa della sala\n");
                 currentPage = 0;
                 return;
             }
             
-            getLine(hallMap, 2, hallMapMostWideLine, sizeof(hallMapMostWideLine));
+            getLine(hallMapBuff, 2, hallMapMostWideLine, sizeof(hallMapMostWideLine));
 
             printf("\033[1J\n");
             centerMapText(strlen(hallMapMostWideLine)+6, "%s - %s", filmTitle, filmShowtime);
             printf("\n\n");
             centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
             printf("\n\n");
-            printf("%s\n", hallMap);
+            printf("%s\n", hallMapBuff);
+            printf("\nLegenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\n");
             // printf("Film: %s\n", filmTitle);
             // printf("Orario: %s\n", filmShowtime);
             // printf("righe: %d, colonne: %d\n", hallRows, hallColums);
@@ -136,17 +164,33 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             
 
             for (int i = 1; i <= numberOfSeats; i++){
+                printf("\033[1J\n");
+                centerMapText(strlen(hallMapMostWideLine)+6, "%s - %s", filmTitle, filmShowtime);
+                printf("\n\n");
+                centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
+                printf("\n\n");
+                printf("%s\n", hallMapBuff);
+                // Legend
+                printf("Legenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\033[0;33m[A1]\033[0m Selezionato\n\n");
+                
                 while (1){
                     printf("Inserisci la riga e la colonna del posto %d (Es: A7): ", i);
                     read_str(seatChoice);
+                    parseSeat(seatChoice, &seatChoiceRow, &seatChoiceColumn);
 
                     if (
-                        strlen(seatChoice) == 2 && 
-                        seatChoice[0] >= 'A' &&
-                        seatChoice[0] <= ('A'+ hallRows) && 
-                        safeStrToInt(&seatChoice[1]) >= 1 &&
-                        safeStrToInt(&seatChoice[1]) <= hallColums
+                        seatChoiceRow >= 'A' &&
+                        seatChoiceRow <= ('A'+ hallRows) && 
+                        seatChoiceColumn >= 1 &&
+                        seatChoiceColumn <= hallColums
                     ) {
+                        if(hallMap[(seatChoiceRow - 'A') * hallColums + seatChoiceColumn - 1] == '1'){
+                            printf("Posto già prenotato\n");
+                            continue;
+                        }else if(hallMap[(seatChoiceRow - 'A') * hallColums + seatChoiceColumn - 1] == '3'){
+                            printf("Posto già selezionato\n");
+                            continue;
+                        }
                         break;
                     }else{
                         printf("Posto non valido\n");
@@ -154,10 +198,19 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     }
                 } 
                 
-                strncat(requestBody, seatChoice, 2);
+                hallMap[(seatChoiceRow - 'A') * hallColums + seatChoiceColumn - 1] = '3'; //SELECTED
+                generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
+                strncat(requestBody, ".", 1);
+                strncat(requestBody, seatChoice, strlen(seatChoice));
                 printf("Posto %d: %s\n", i, seatChoice);
             }
 
+            printf("\033[1J\n");
+            centerMapText(strlen(hallMapMostWideLine)+6, "%s - %s", filmTitle, filmShowtime);
+            printf("\n\n");
+            centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
+            printf("\n\n");
+            printf("%s\n", hallMapBuff);
             printf("Richiesta: %s\n", requestBody);
             waitForKey();
         }
