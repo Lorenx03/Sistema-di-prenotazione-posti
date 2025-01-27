@@ -17,6 +17,7 @@ Films cinemaFilms = {0};
 //     httpResponseBuilder(response, 200, "OK", response_body);
 // }
 
+// Http route: /
 void GETrootHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
@@ -32,7 +33,8 @@ void GETrootHandler(char *request, char *response) {
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
-void GETfilmsHandler(char *request, char *response) {
+// Http route: /films
+void GETFilmsHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
@@ -40,6 +42,7 @@ void GETfilmsHandler(char *request, char *response) {
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
+// Http route: /films/list
 void GETFilmsListHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
@@ -48,6 +51,7 @@ void GETFilmsListHandler(char *request, char *response) {
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
+// Http route: /films/showtimes
 void GETBookShowtimesListHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
     int selected_film = safeStrToInt(request);
@@ -69,14 +73,15 @@ void GETBookShowtimesListHandler(char *request, char *response) {
         
         snprintf(response_body, sizeof(response_body), "Lista degli orari disponibili per: "COLOR_BOLD"%s"COLOR_OFF"\n%s", film->name, listOfShowTimes);
         free(temp);
+
+        httpResponseBuilder(response, 200, "OK", response_body);
     }else{
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
+        httpResponseBuilder(response, 404, "Not Found", response_body);
     }
-    
-    printf("response_body: %s\n", response_body);
-    httpResponseBuilder(response, 200, "OK", response_body);
 }
 
+// Http route: /films/map
 void GETFilmHallMapHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
 
@@ -118,7 +123,7 @@ int main() {
 
     HttpRoute filmsRoute = {0};
     filmsRoute.name = "films";
-    filmsRoute.handlers[GET] = GETfilmsHandler;
+    filmsRoute.handlers[GET] = GETFilmsHandler;
 
     HttpRoute filmsListRoute = {0};
     filmsListRoute.name = "list";
@@ -129,7 +134,7 @@ int main() {
     filmHallMapRoute.handlers[GET] = GETFilmHallMapHandler;
 
     HttpRoute bookShowtimesListRoute = {0};
-    bookShowtimesListRoute.name = "book";
+    bookShowtimesListRoute.name = "showtimes";
     bookShowtimesListRoute.handlers[GET] = GETBookShowtimesListHandler;
 
 

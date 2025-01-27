@@ -11,6 +11,8 @@ enum Pages {
     EXIT
 };
 
+// Utils
+
 void inline printClearedResponse(char *response) {
     removeHttpHeaders(response);
     printf("\033[1J%s\n", response);
@@ -48,7 +50,7 @@ void parseSeat(char *seat, char *row, int *column) {
 }
 
 
-
+// Book a seat
 void bookSeatPages(TargetHost *targetHost, int film_id) {
     char response[4096];
     char requestBody[4096];
@@ -77,7 +79,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
         switch (currentPage) {
         case 0:
             snprintf(requestBody, sizeof(requestBody), "%d", film_id);
-            sendHttpRequest(targetHost, GET, "/book", requestBody, response);
+            sendHttpRequest(targetHost, GET, "/showtimes", requestBody, response);
             printClearedResponse(response);
 
             do {
@@ -140,6 +142,8 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             printf("\n\n");
             printf("%s\n", hallMapBuff);
             printf("\nLegenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\n");
+
+            // DEBUG:
             // printf("Film: %s\n", filmTitle);
             // printf("Orario: %s\n", filmShowtime);
             // printf("righe: %d, colonne: %d\n", hallRows, hallColums);
@@ -212,10 +216,13 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             printf("\n\n");
             printf("%s\n", hallMapBuff);
             printf("Richiesta: %s\n", requestBody);
+
             waitForKey();
         }
     }while (currentPage != 4);
 }
+
+
 
 
 int main() {
