@@ -21,10 +21,25 @@ Films cinemaFilms = {0};
 void GETrootHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
+    size_t buffSize = MAX_RESPONSE_SIZE;
+    char *current_ptr = response_body;  // Add this line
 
-    snprintf(response_body, sizeof(response_body),
-             "Benvenuto al Cinema\n\n"
-             "Menù\n\n"
+    appendToBuffer(&current_ptr, &buffSize,"===================================================================\n");
+
+    appendToBuffer(&current_ptr, &buffSize,
+             "\n"
+             " ________  ___  ________   _______   _____ ______   ________     \n"
+             "|\\   ____\\|\\  \\|\\   ___  \\|\\  ___ \\ |\\   _ \\  _   \\|\\   __  \\    \n"
+             "\\ \\  \\___|\\ \\  \\ \\  \\\\ \\  \\ \\   __/|\\ \\  \\\\\\__\\ \\  \\ \\  \\|\\  \\   \n"
+             " \\ \\  \\    \\ \\  \\ \\  \\\\ \\  \\ \\  \\_|/_\\ \\  \\\\|__| \\  \\ \\   __  \\  \n"
+             "  \\ \\  \\____\\ \\  \\ \\  \\\\ \\  \\ \\  \\_|\\ \\ \\  \\    \\ \\  \\ \\  \\ \\  \\ \n"
+             "   \\ \\_______\\ \\__\\ \\__\\\\ \\__\\ \\_______\\ \\__\\    \\ \\__\\ \\__\\ \\__\\\n"
+             "    \\|_______|\\|__|\\|__| \\|__|\\|_______|\\|__|     \\|__|\\|__|\\|__|\n"
+             "\n\n");
+
+    appendToBuffer(&current_ptr, &buffSize,"===================================================================\n\n");
+
+    appendToBuffer(&current_ptr, &buffSize,
              "1. Programmazione sale\n"
              "2. Acquista biglietto\n"
              "3. Disdire una prenotazione\n"
@@ -37,7 +52,7 @@ void GETrootHandler(char *request, char *response) {
 void GETFilmsHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
-    snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
+    snprintf(response_body, sizeof(response_body), COLOR_BOLD"Lista dei film:\n"COLOR_OFF);
     print_films(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
     httpResponseBuilder(response, 200, "OK", response_body);
 }
@@ -66,7 +81,7 @@ void GETBookShowtimesListHandler(char *request, char *response) {
         char *showtime = strtok_r(temp, ",", &saveptr);
 
         while (showtime != NULL) {
-            snprintf(listOfShowTimes + strlen(listOfShowTimes), sizeof(listOfShowTimes) - strlen(listOfShowTimes), "%d. %s\n", showtimeIndex, showtime);
+            snprintf(listOfShowTimes + strlen(listOfShowTimes), sizeof(listOfShowTimes) - strlen(listOfShowTimes), "%d. "COLOR_BOLD"%s"COLOR_OFF"\n", showtimeIndex, showtime);
             showtimeIndex++;
             showtime = strtok_r(NULL, ",", &saveptr);
         }
@@ -103,7 +118,7 @@ void GETFilmHallMapHandler(char *request, char *response) {
 
     if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
         Film *film = &cinemaFilms.list[selected_film - 1];
-        generateHallMapResponse(&film->halls[hall_index], response_body, sizeof(response_body));
+        generateHallMapResponse(&film->halls[hall_index - 1], response_body, sizeof(response_body));
     }else{
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
     }

@@ -136,7 +136,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             getLine(hallMapBuff, 2, hallMapMostWideLine, sizeof(hallMapMostWideLine));
 
             printf("\033[1J\n");
-            centerMapText(strlen(hallMapMostWideLine)+6, "%s - %s", filmTitle, filmShowtime);
+            centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
             printf("\n\n");
             centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
             printf("\n\n");
@@ -169,7 +169,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
 
             for (int i = 1; i <= numberOfSeats; i++){
                 printf("\033[1J\n");
-                centerMapText(strlen(hallMapMostWideLine)+6, "%s - %s", filmTitle, filmShowtime);
+                centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
                 printf("\n\n");
                 centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
                 printf("\n\n");
@@ -210,7 +210,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             }
 
             printf("\033[1J\n");
-            centerMapText(strlen(hallMapMostWideLine)+6, "%s - %s", filmTitle, filmShowtime);
+            centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
             printf("\n\n");
             centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
             printf("\n\n");
