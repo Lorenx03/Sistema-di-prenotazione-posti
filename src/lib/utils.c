@@ -65,3 +65,13 @@ void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *forma
         *remaining_size -= written;
     }
 }
+
+void generateRandomString(char *str, size_t length) {
+    const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    size_t charset_size = sizeof(charset) - 1;
+    
+    for (size_t i = 0; i < length; i++) {
+        str[i] = charset[rand() % charset_size];
+    }
+    str[length] = '\0';
+}

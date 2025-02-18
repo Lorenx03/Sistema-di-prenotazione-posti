@@ -1,5 +1,7 @@
 #include "httpServer.h"
 
+volatile sig_atomic_t running = 1; // Flag to stop the server
+
 // ================================ ROUTES ================================
 
 void addHttpSubroute(HttpRoute *subTreeRoot, HttpRoute *newChild) {

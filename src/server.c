@@ -22,7 +22,7 @@ void GETrootHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
     size_t buffSize = MAX_RESPONSE_SIZE;
-    char *current_ptr = response_body;  // Add this line
+    char *current_ptr = response_body;
 
     appendToBuffer(&current_ptr, &buffSize,"===================================================================\n");
 
@@ -127,6 +127,55 @@ void GETFilmHallMapHandler(char *request, char *response) {
     httpResponseBuilder(response, 200, "OK", response_body);
 }
 
+// Http route: /book
+void POSTBookSeat(char *request, char *response){
+    char response_body[MAX_RESPONSE_SIZE] = {0};
+    size_t buffSize = MAX_RESPONSE_SIZE;
+    char *current_ptr = response_body;
+
+    //exaple request: 1.1
+    char *saveptr;
+    char *token = strtok_r(request, ".", &saveptr);
+    int selected_film = -1, hall_index = -1;
+
+    char prenotationCode[9] = {0};
+    char seatPrenotationCode[9] = {0};
+    char bookingCode[18] = {0};
+    generateRandomString(prenotationCode, sizeof(prenotationCode)-1);
+
+    if (token != NULL) {
+        selected_film = safeStrToInt(token);
+        token = strtok_r(NULL, ".", &saveptr);
+        if (token != NULL) {
+            hall_index = safeStrToInt(token);
+
+            printf("selected_film: %d\n", selected_film);
+            printf("hall_index: %d\n", hall_index);
+
+            if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
+                Film *film = &cinemaFilms.list[selected_film - 1];
+                
+                token = strtok_r(NULL, ".", &saveptr);
+                while(token != NULL){
+                    generateRandomString(seatPrenotationCode, sizeof(seatPrenotationCode)-1);
+                    snprintf(bookingCode, sizeof(bookingCode), "%s-%s", prenotationCode, seatPrenotationCode);
+
+                    printf("token: %s  --  %s\n", token, bookingCode);
+                    bookSeat(&film->halls[hall_index - 1], token, bookingCode);
+
+                    printTicket(&current_ptr, bookingCode, film->name, film->showtimes, token, &buffSize);
+                    token = strtok_r(NULL, ".", &saveptr);
+                }
+            }else{
+                snprintf(response_body, sizeof(response_body), "Film non trovato\n");
+            }
+        }
+    }
+
+    printf("response_body: %s\n", response_body);
+    httpResponseBuilder(response, 200, "OK", response_body);
+}
+
 
 int main() {
     //Random seed for booking code generation
@@ -152,11 +201,18 @@ int main() {
     bookShowtimesListRoute.name = "showtimes";
     bookShowtimesListRoute.handlers[GET] = GETBookShowtimesListHandler;
 
+    HttpRoute bookRoute = {0};
+    bookRoute.name = "book";
+    bookRoute.handlers[POST] = POSTBookSeat;
 
-    addHttpSubroute(&rootRoute, &filmsRoute);
-    addHttpSubroute(&rootRoute, &bookShowtimesListRoute);
-    addHttpSubroute(&filmsRoute, &filmsListRoute);
-    addHttpSubroute(&filmsRoute, &filmHallMapRoute);
+
+    addHttpSubroute(&rootRoute, &filmsRoute); // /films
+    addHttpSubroute(&rootRoute, &bookRoute); // /book
+
+    addHttpSubroute(&filmsRoute, &bookShowtimesListRoute); // /films/showtimes
+    addHttpSubroute(&filmsRoute, &filmsListRoute); // /films/list
+    addHttpSubroute(&filmsRoute, &filmHallMapRoute); // /films/map
+
 
     HttpServer server = {
         .port = 8090,

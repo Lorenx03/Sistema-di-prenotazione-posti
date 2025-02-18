@@ -79,7 +79,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
         switch (currentPage) {
         case 0:
             snprintf(requestBody, sizeof(requestBody), "%d", film_id);
-            sendHttpRequest(targetHost, GET, "/showtimes", requestBody, response);
+            sendHttpRequest(targetHost, GET, "/films/showtimes", requestBody, response);
             printClearedResponse(response);
 
             do {
@@ -175,7 +175,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                 printf("\n\n");
                 printf("%s\n", hallMapBuff);
                 // Legend
-                printf("Legenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\033[0;33m[A1]\033[0m Selezionato\n\n");
+                printf("Legenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\033[0;33m{A1}\033[0m Selezionato\n\n");
                 
                 while (1){
                     printf("Inserisci la riga e la colonna del posto %d (Es: A7): ", i);
@@ -210,13 +210,18 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             }
 
             printf("\033[1J\n");
-            centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
-            printf("\n\n");
-            centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
-            printf("\n\n");
-            printf("%s\n", hallMapBuff);
-            printf("Richiesta: %s\n", requestBody);
+            // centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
+            // printf("\n\n");
+            // centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
+            // printf("\n\n");
+            // printf("%s\n", hallMapBuff);
+            // printf("Richiesta: %s\n", requestBody);
 
+            printf("\033[1J\n");
+            sendHttpRequest(targetHost, POST, "/book", requestBody, response);
+            removeHttpHeaders(response);
+            printf("%s\n", response);
+            
             waitForKey();
         }
     }while (currentPage != 4);

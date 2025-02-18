@@ -19,7 +19,7 @@ typedef struct {
     char row;
     int seat_number;
     SeatState state;
-    int booking_code;
+    char booking_code[18];
 } Seat;
 
 // Struttura per la sala
@@ -55,5 +55,7 @@ void initFilmsList(const char *filename, Films *filmsStruct);
 void initialize_seats(Hall *hall, int rows, int columns);
 void create_halls_for_showtimes(Film *film);
 void generateHallMapResponse(Hall *hall, char *buffer, size_t remaining_size);
+int bookSeat(Hall *hall, char *seat, char *bookingCode);
+void printTicket(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size);
 
 #endif
