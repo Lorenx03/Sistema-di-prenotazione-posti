@@ -85,6 +85,8 @@ typedef struct workerThreadParams {
     HttpRoute *root;
 } WorkerThreadParams;
 
+volatile sig_atomic_t running = 1; // Flag to stop the server
+
 // Adds a new child route to an existing route in the HTTP routing tree
 void addHttpSubroute(HttpRoute *subTreeRoot, HttpRoute *newChild);
 

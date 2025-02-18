@@ -210,12 +210,14 @@ void *workerRoutine(void *params) {
     struct sockaddr_in clientAddress;
     socklen_t clientLength;
 
-    while (1) {
+    while (running) {
         // Accept
         int connSocketFd = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
-        if (connSocketFd < 0) {
+        if (connSocketFd < 0 && running == 1) {
             fprintf(stderr, "Accept failed: %s\n", strerror(errno));
             continue;
+        }else if (running == 0){
+            break;
         }
 
         // Handle
@@ -224,10 +226,18 @@ void *workerRoutine(void *params) {
         // Close
         close(connSocketFd);
     }
+
+    return NULL;
 }
 
 
 // ----------------------- SERVER -----------------------
+
+void handleSig(int sig) {
+    (void)sig;
+    printf("Stopping server...\n");
+    running = 0;
+}
 
 int httpServerServe(HttpServer *server) {
     int serverSocket; // Socket file descriptor
@@ -251,6 +261,14 @@ int httpServerServe(HttpServer *server) {
         return EXIT_FAILURE;
     }
     printf("Socket created successfully.\n");
+
+    // Reuse port
+    int opt = 1;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        fprintf(stderr, "Setting socket options failed: %s\n", strerror(errno));
+        close(serverSocket);
+        return EXIT_FAILURE;
+    }
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {
         fprintf(stderr, "Binding failed: %s\n", strerror(errno));
@@ -287,6 +305,19 @@ int httpServerServe(HttpServer *server) {
         }
     }
 
+    //Signal handler
+    struct sigaction sa;
+    sa.sa_handler = handleSig;  
+    sa.sa_flags = 0;                
+    sigemptyset(&sa.sa_mask);
+
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+
     workerRoutine(&workerParams[0]);
+
+    // Cleanup
+    shutdown(serverSocket, SHUT_RDWR);
+    close(serverSocket);
     return 0;
 }
