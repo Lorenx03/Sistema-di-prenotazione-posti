@@ -137,6 +137,7 @@ void POSTBookSeat(char *request, char *response){
     char *saveptr;
     char *token = strtok_r(request, ".", &saveptr);
     int selected_film = -1, hall_index = -1;
+    char showtime[6] = {0};
 
     char prenotationCode[9] = {0};
     char seatPrenotationCode[9] = {0};
@@ -154,6 +155,9 @@ void POSTBookSeat(char *request, char *response){
 
             if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
                 Film *film = &cinemaFilms.list[selected_film - 1];
+                getNthToken(film->showtimes, ",", hall_index - 1, showtime, sizeof(showtime));
+
+                appendToBuffer(&current_ptr, &buffSize, "%s\n", prenotationCode);
                 
                 token = strtok_r(NULL, ".", &saveptr);
                 while(token != NULL){
@@ -163,7 +167,7 @@ void POSTBookSeat(char *request, char *response){
                     printf("token: %s  --  %s\n", token, bookingCode);
                     bookSeat(&film->halls[hall_index - 1], token, bookingCode);
 
-                    printTicket(&current_ptr, bookingCode, film->name, film->showtimes, token, &buffSize);
+                    printTicket(&current_ptr, bookingCode, film->name, showtime, token, &buffSize);
                     token = strtok_r(NULL, ".", &saveptr);
                 }
             }else{

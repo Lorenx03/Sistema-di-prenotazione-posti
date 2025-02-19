@@ -75,3 +75,31 @@ void generateRandomString(char *str, size_t length) {
     }
     str[length] = '\0';
 }
+
+
+void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) {
+    char temp[1024];
+    strncpy(temp, str, sizeof(temp));
+
+    char *saveptr;
+    char *current_token;
+    int current_token_index = 0;
+
+    current_token = strtok_r(temp, delim, &saveptr);
+    while (current_token != NULL && current_token_index < n) {
+        current_token = strtok_r(NULL, delim, &saveptr);
+        current_token_index++;
+    }
+
+    memset(token, 0, token_size);
+
+    if (current_token != NULL) {
+        if(strlen(current_token) < token_size){
+            strncpy(token, current_token, token_size);
+        }else{
+            fprintf(stderr, "getNToken: token too long\n");
+        }
+    } else {
+        fprintf(stderr, "getNToken: token not found\n");
+    }
+}

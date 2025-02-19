@@ -12,5 +12,6 @@ int safeStrToInt(char *buff);
 void getLine(char* str, int n, char* buffer, size_t buffer_size);
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...);
 void generateRandomString(char *str, size_t length);
+void getNthToken(char *str, char *delim, int n, char *token, size_t token_size);
 
 #endif
