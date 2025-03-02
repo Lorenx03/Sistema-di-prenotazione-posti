@@ -81,7 +81,11 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
         switch (currentPage) {
         case 0:
             snprintf(requestBody, sizeof(requestBody), "%d", film_id);
-            sendHttpRequest(targetHost, GET, "/films/showtimes", requestBody, response);
+            if(sendHttpRequest(targetHost, GET, "/films/showtimes", requestBody, response) != HTTP_STATUS_OK){
+                printf("Errore nella richiesta\n");
+                return;
+            }
+
             printClearedResponse(response);
 
             do {
@@ -111,6 +115,8 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             break;
 
         case 1:
+            // SECTION: Book seat prompts
+
             snprintf(requestBody, sizeof(requestBody), "%d.%d", film_id, showTimeChoice);
             sendHttpRequest(targetHost, GET, "/films/map", requestBody, response);
             removeHttpHeaders(response);
@@ -182,6 +188,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                 while (1){
                     printf("Inserisci la riga e la colonna del posto %d (Es: A7): ", i);
                     read_str(seatChoice);
+                    convertToUppercase(seatChoice);
                     parseSeat(seatChoice, &seatChoiceRow, &seatChoiceColumn);
 
                     if (
@@ -222,15 +229,16 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             while (1){
                 printf("Confermi la prenotazione? (s/n): ");
                 read_str(seatChoice);
+                convertToUppercase(seatChoice);
 
-                if (strcmp(seatChoice, "s") == 0 || strcmp(seatChoice, "n") == 0) {
+                if (strcmp(seatChoice, "S") == 0 || strcmp(seatChoice, "N") == 0) {
                     break;
                 }else{
                     printf("Scelta non valida\n");
                 }
             }
 
-            if (strcmp(seatChoice, "n") == 0) {
+            if (strcmp(seatChoice, "N") == 0) {
                 for (int i = 0; i < hallRows; i++){
                     for (int j = 0; j < hallColums; j++){
                         if (hallMap[i * hallColums + j] == '3') {
@@ -254,15 +262,16 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             while (1){
                 printf("Vuoi salvare la prenotazione? (s/n): ");
                 read_str(seatChoice);
+                convertToUppercase(seatChoice);
 
-                if (strcmp(seatChoice, "s") == 0 || strcmp(seatChoice, "n") == 0) {
+                if (strcmp(seatChoice, "S") == 0 || strcmp(seatChoice, "N") == 0) {
                     break;
                 }else{
                     printf("Scelta non valida\n");
                 }
             }
 
-            if (strcmp(seatChoice, "s") == 0) {
+            if (strcmp(seatChoice, "S") == 0) {
                 FILE *file = fopen(ticketName, "w");
                 if (file == NULL) {
                     perror("Error opening file");
@@ -279,6 +288,8 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             waitForKey();
 
             currentPage = 4;
+            // !SECTION
+
             break;
         }
     }while (currentPage != 4);

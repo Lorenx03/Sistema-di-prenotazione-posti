@@ -239,6 +239,9 @@ void handleSig(int sig) {
     (void)sig;
     printf("Stopping server...\n");
     running = 0;
+    
+    printf("Server stopped - (press any key to continue)\n");
+    waitForKey();
 }
 
 int httpServerServe(HttpServer *server) {

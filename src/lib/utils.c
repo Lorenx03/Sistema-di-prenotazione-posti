@@ -103,3 +103,23 @@ void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) 
         fprintf(stderr, "getNToken: token not found\n");
     }
 }
+
+
+void convertToUppercase(char *str){
+    if (str == NULL) {
+        fprintf(stderr, "convertToUppercase: NULL pointer provided\n");
+        return;
+    }
+
+    size_t len = strlen(str);
+    if (len == 0) {
+        fprintf(stderr, "convertToUppercase: string is empty\n");
+        return;
+    }
+
+    for (size_t i = 0; i < len; i++) {
+        if (str[i] >= 'a' && str[i] <= 'z') {
+            str[i] = str[i] - 'a' + 'A';
+        }
+    }
+}

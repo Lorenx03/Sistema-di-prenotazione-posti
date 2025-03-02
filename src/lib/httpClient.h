@@ -8,21 +8,12 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "utils.h"
+#include "httpLib.h"
+
 // Buffer size
 #define BUFFER_SIZE 4096
 
-typedef enum httpMethod {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    HEAD,
-    OPTIONS,
-    TRACE,
-    CONNECT,
-    PATCH,
-    UNKNOWN
-} HttpMethod;
 
 typedef struct targetHost {
     char *ip_addr;
@@ -32,7 +23,7 @@ typedef struct targetHost {
 } TargetHost;
 
 void connectToSockServer(TargetHost *targetHost);
-void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response);
+int sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response);
 void removeHttpHeaders(char *response);
 
 #endif // HTTPCLIENT_H

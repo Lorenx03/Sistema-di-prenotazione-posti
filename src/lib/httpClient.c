@@ -32,12 +32,33 @@ void removeHttpHeaders(char *response) {
     }
 }
 
+int getHttpStatusCode(char *response) {
+    if (response == NULL) {
+        return -1;
+    }
 
-void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response) {
+    if (strncmp(response, "HTTP/", 5) != 0) {
+        return -1;
+    }
+    
+    char fistline[1024];
+    getLine(response, 1, fistline, sizeof(fistline));
+    if (strlen(fistline) == 0) {
+        return -1;
+    }
+
+    char statusCode[4];
+    getNthToken(fistline, " ", 1, statusCode, sizeof(statusCode));
+    return safeStrToInt(statusCode);
+}
+
+
+int sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response) {
     connectToSockServer(targetHost);
 
     char buffer[BUFFER_SIZE];
     const char *methodStr;
+    int statusCode;
     
     switch (method) {
         case GET:
@@ -108,8 +129,15 @@ void sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char
 
     response[total_bytes] = '\0';
 
+    statusCode = getHttpStatusCode(response);
+    if (statusCode == -1) {
+        fprintf(stderr, "Errore: risposta HTTP non valida\n");
+    }
+
     close(targetHost->sockfd);
     targetHost->sockfd = -1;
+
+    return statusCode;
 }
 
 //EXAMPLE USAGE

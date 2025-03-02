@@ -20,6 +20,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "userInput.h"
+#include "httpLib.h"
+
 #define MAX_ROUTE_NAME 100
 #define MAX_REQUEST_SIZE 4096
 #define MAX_RESPONSE_SIZE 4096
@@ -34,20 +37,6 @@
 
 // ================================ ROUTES ================================
 
-// Http methods enum
-typedef enum httpMethod {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    HEAD,
-    OPTIONS,
-    TRACE,
-    CONNECT,
-    PATCH,
-    UNKNOWN
-} HttpMethod;
-
 // Http route struct
 typedef struct httpRoute {
     char *name;
@@ -59,7 +48,6 @@ typedef struct httpRoute {
     struct httpRoute *sibling;
     struct httpRoute *child;
 } HttpRoute;
-
 
 
 // ================================ HTTP SERVER ================================
