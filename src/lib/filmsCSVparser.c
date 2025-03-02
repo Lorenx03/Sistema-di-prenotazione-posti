@@ -83,7 +83,9 @@ int calculate_total_seats(Film *film) {
 // Function to count the number of showtimes
 int count_showtimes(Film *film) {
     int count = 0;
-    char *showtimes = strdup(film->showtimes);  // Copy to avoid modifying the original
+    char showtimes[1024] = {0};
+    
+    strncpy(showtimes, film->showtimes, sizeof(showtimes));  
     char *token = strtok(showtimes, ",");
 
     while (token) {
@@ -91,7 +93,6 @@ int count_showtimes(Film *film) {
         token = strtok(NULL, ",");
     }
 
-    free(showtimes);
     return count;
 }
 

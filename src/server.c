@@ -157,6 +157,7 @@ void POSTBookSeat(char *request, char *response){
                 Film *film = &cinemaFilms.list[selected_film - 1];
                 getNthToken(film->showtimes, ",", hall_index - 1, showtime, sizeof(showtime));
 
+                // Append the prenotation code to the response, for filename of the tickets
                 appendToBuffer(&current_ptr, &buffSize, "%s\n", prenotationCode);
                 
                 token = strtok_r(NULL, ".", &saveptr);
@@ -165,19 +166,38 @@ void POSTBookSeat(char *request, char *response){
                     snprintf(bookingCode, sizeof(bookingCode), "%s-%s", prenotationCode, seatPrenotationCode);
 
                     printf("token: %s  --  %s\n", token, bookingCode);
-                    bookSeat(&film->halls[hall_index - 1], token, bookingCode);
+                    // bookSeat(&film->halls[hall_index - 1], token, bookingCode);
+
+                    switch (bookSeat(&film->halls[hall_index - 1], token, bookingCode)){
+                        case 0:
+                            break;
+                        case 1:
+                            httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Errore nella prenotazione del posto\n");
+                            unBookPrenotation(&film->halls[hall_index - 1], prenotationCode);
+                            return;
+                            break;
+                        case 2:
+                            httpResponseBuilder(response, HTTP_STATUS_CONFLICT, "Bad Request", "Posto già prenotato\n");
+                            unBookPrenotation(&film->halls[hall_index - 1], prenotationCode);
+                            return;
+                            break;
+                    }
 
                     printTicket(&current_ptr, bookingCode, film->name, showtime, token, &buffSize);
                     token = strtok_r(NULL, ".", &saveptr);
                 }
+
+                printf("response_body: %s\n", response_body);
+                httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
+                return;
             }else{
                 snprintf(response_body, sizeof(response_body), "Film non trovato\n");
+                httpResponseBuilder(response, HTTP_STATUS_NOT_FOUND, "Not Found", response_body);
+                return;
             }
         }
     }
-
-    printf("response_body: %s\n", response_body);
-    httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
+    httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
 }
 
 

@@ -140,7 +140,6 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
 
             if (hallColums == -1 || hallRows == -1 || strlen(hallMapBuff) == 0) {
                 printf("Errore nella lettura della mappa della sala\n");
-                currentPage = 0;
                 return;
             }
             
@@ -252,6 +251,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                 break;
             }
 
+            // NOTE - POST /book
             printf("\033[1J\n");
             if(sendHttpRequest(targetHost, POST, "/book", requestBody, response) != HTTP_STATUS_CREATED){
                 printf("Errore nella richiesta\n");

@@ -56,6 +56,11 @@ void readCsvRows(CSVFile *csv) {
             exit(EXIT_FAILURE);
         }
 
+        if (csv->headings_count == 0){
+            fprintf(stderr, "Error: headings not found\n");
+            exit(EXIT_FAILURE);
+        }
+        
         csv->rows[csv->rows_count] = malloc(csv->headings_count * sizeof(char*));
         if (csv->rows[csv->rows_count] == NULL) {
             perror("Errore nell'allocazione della memoria per le colonne");
@@ -152,6 +157,12 @@ CSVFile *csvInit(char *filename) {
     newCSVfile->rows_count = 0;
 
     newCSVfile->file = fopen(filename, "a+");
+    if (newCSVfile->file == NULL){
+        perror("Errore nell'apertura del file");
+        free(newCSVfile);
+        exit(EXIT_FAILURE);
+    }
+    
     fseek(newCSVfile->file, 0, SEEK_SET);
 
     if (newCSVfile->file == NULL) {

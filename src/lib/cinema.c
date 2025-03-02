@@ -8,6 +8,7 @@ void initialize_seats(Hall *hall, int rows, int columns) {
             hall->seats[i][j].row = 'A' + i;
             hall->seats[i][j].seat_number = j + 1;
             hall->seats[i][j].state = !(i == (rows-1) && j >= 0 && j <= 2) ? FREE : DISABLED;
+            pthread_mutex_init(&hall->seats[i][j].lock, NULL);
             memset(hall->seats[i][j].booking_code, 0, sizeof(hall->seats[i][j].booking_code));
         }
     }    
@@ -92,14 +93,45 @@ int bookSeat(Hall *hall, char *seat, char *bookingCode) {
         return 1;
     }
 
-    if (hall->seats[row][column].state == FREE) {
+    if (hall->seats[row][column].state == FREE && pthread_mutex_trylock(&hall->seats[row][column].lock) == 0) {
         hall->seats[row][column].state = BOOKED;
         strncpy(hall->seats[row][column].booking_code, bookingCode, sizeof(hall->seats[row][column].booking_code));
+        pthread_mutex_unlock(&hall->seats[row][column].lock);
         return 0;
     }else{
         fprintf(stderr, "bookSeat: Seat already booked\n");
+        return 2;
+    }
+}
+
+
+int unBookPrenotation(Hall *hall, char *prenotationCode) {
+    char currentPrenotaionCode[9] = {0};
+
+    if(hall == NULL || prenotationCode == NULL){
+        fprintf(stderr, "bookSeat: NULL pointer\n");
         return 1;
     }
+
+    if(strlen(prenotationCode) != 8){
+        fprintf(stderr, "bookSeat: Invalid booking code\n");
+        return 1;
+    }
+
+    for (int i = 0; i < hall->rows; i++){
+        for (int j = 0; j < hall->columns; j++){
+            getNthToken(hall->seats[i][j].booking_code, "-", 0, currentPrenotaionCode, sizeof(currentPrenotaionCode));
+            if(strcmp(currentPrenotaionCode, prenotationCode) == 0){
+                if(pthread_mutex_trylock(&hall->seats[i][j].lock) == 0){
+                    hall->seats[i][j].state = FREE;
+                    memset(hall->seats[i][j].booking_code, 0, sizeof(hall->seats[i][j].booking_code));
+                    pthread_mutex_unlock(&hall->seats[i][j].lock);
+                }
+            }
+        }
+    }
+
+    return 0;
 }
 
 

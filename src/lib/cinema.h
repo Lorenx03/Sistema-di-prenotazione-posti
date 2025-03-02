@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 typedef enum {
     FREE,
@@ -19,6 +20,7 @@ typedef struct {
     char row;
     int seat_number;
     SeatState state;
+    pthread_mutex_t lock;
     char booking_code[18];
 } Seat;
 
@@ -57,5 +59,6 @@ void create_halls_for_showtimes(Film *film);
 void generateHallMapResponse(Hall *hall, char *buffer, size_t remaining_size);
 int bookSeat(Hall *hall, char *seat, char *bookingCode);
 void printTicket(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size);
+int unBookPrenotation(Hall *hall, char *prenotationCode);
 
 #endif
