@@ -45,7 +45,7 @@ void GETrootHandler(char *request, char *response) {
              "3. Disdire una prenotazione\n"
              "4. Esci\n");
 
-    httpResponseBuilder(response, 200, "OK", response_body);
+    httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
 // Http route: /films
@@ -54,7 +54,7 @@ void GETFilmsHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), COLOR_BOLD"Lista dei film:\n"COLOR_OFF);
     print_films(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
-    httpResponseBuilder(response, 200, "OK", response_body);
+    httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
 // Http route: /films/list
@@ -63,7 +63,7 @@ void GETFilmsListHandler(char *request, char *response) {
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
     print_films_name(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
-    httpResponseBuilder(response, 200, "OK", response_body);
+    httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
 // Http route: /films/showtimes
@@ -89,10 +89,10 @@ void GETBookShowtimesListHandler(char *request, char *response) {
         snprintf(response_body, sizeof(response_body), "Lista degli orari disponibili per: "COLOR_BOLD"%s"COLOR_OFF"\n%s", film->name, listOfShowTimes);
         free(temp);
 
-        httpResponseBuilder(response, 200, "OK", response_body);
+        httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
     }else{
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
-        httpResponseBuilder(response, 404, "Not Found", response_body);
+        httpResponseBuilder(response, HTTP_STATUS_NOT_FOUND, "Not Found", response_body);
     }
 }
 
@@ -124,7 +124,7 @@ void GETFilmHallMapHandler(char *request, char *response) {
     }
     
     printf("response_body: %s\n", response_body);
-    httpResponseBuilder(response, 200, "OK", response_body);
+    httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
 // Http route: /book
@@ -177,7 +177,7 @@ void POSTBookSeat(char *request, char *response){
     }
 
     printf("response_body: %s\n", response_body);
-    httpResponseBuilder(response, 200, "OK", response_body);
+    httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
 }
 
 

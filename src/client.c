@@ -118,7 +118,10 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             // SECTION: Book seat prompts
 
             snprintf(requestBody, sizeof(requestBody), "%d.%d", film_id, showTimeChoice);
-            sendHttpRequest(targetHost, GET, "/films/map", requestBody, response);
+            if(sendHttpRequest(targetHost, GET, "/films/map", requestBody, response) != HTTP_STATUS_OK){
+                printf("Errore nella richiesta\n");
+                return;
+            }
             removeHttpHeaders(response);
 
             token = strtok_r(response, ".", &saveptr);
@@ -250,7 +253,10 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             }
 
             printf("\033[1J\n");
-            sendHttpRequest(targetHost, POST, "/book", requestBody, response);
+            if(sendHttpRequest(targetHost, POST, "/book", requestBody, response) != HTTP_STATUS_CREATED){
+                printf("Errore nella richiesta\n");
+                return;
+            }
             removeHttpHeaders(response);
 
             getLine(response, 1, ticketName, sizeof(ticketName));
@@ -312,7 +318,11 @@ int main() {
     do{
         switch (currentPage) {
         case MAIN_MENU:
-            sendHttpRequest(&targetHost, GET, "/", NULL, buffer);
+            if(sendHttpRequest(&targetHost, GET, "/", NULL, buffer) != HTTP_STATUS_OK){
+                printf("Errore nella richiesta\n");
+                return 1;
+            }
+            
             printClearedResponse(buffer);
 
             // User input
@@ -328,7 +338,10 @@ int main() {
             break;
 
         case FILMS_LIST:
-            sendHttpRequest(&targetHost, GET, "/films", NULL, buffer);
+            if(sendHttpRequest(&targetHost, GET, "/films", NULL, buffer) != HTTP_STATUS_OK){
+                printf("Errore nella richiesta\n");
+                return 1;
+            }
             printClearedResponse(buffer);
 
             // User input
@@ -339,7 +352,10 @@ int main() {
             break;
 
         case BOOK_SEAT:
-            sendHttpRequest(&targetHost, GET, "/films/list", NULL, buffer);
+            if(sendHttpRequest(&targetHost, GET, "/films/list", NULL, buffer ) != HTTP_STATUS_OK){
+                printf("Errore nella richiesta\n");
+                return 1;
+            }
             printClearedResponse(buffer);
 
             //count lines
