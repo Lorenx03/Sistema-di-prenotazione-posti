@@ -189,6 +189,7 @@ void POSTBookSeat(char *request, char *response){
 
                 printf("response_body: %s\n", response_body);
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
+                saveBookingsToFile(&cinemaFilms, "bookings.csv");
                 return;
             }else{
                 snprintf(response_body, sizeof(response_body), "Film non trovato\n");
@@ -245,6 +246,7 @@ int main() {
     };
 
     initFilmsList("films.csv", &cinemaFilms);
+    loadBookingsFromFile(&cinemaFilms, "bookings.csv");
 
     if (httpServerServe(&server)) {
         fprintf(stderr, "Error starting server\n");

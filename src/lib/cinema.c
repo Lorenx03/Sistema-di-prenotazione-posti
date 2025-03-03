@@ -71,7 +71,7 @@ void generateHallMapResponse(Hall *hall, char *buffer, size_t remaining_size) {
     *buffer = '\0';
 }
 
-// ================================ BOOKING ================================
+// =============================== BOOKING =================================
 
 int bookSeat(Hall *hall, char *seat, char *bookingCode) {
     if(hall == NULL || seat == NULL){
@@ -134,6 +134,70 @@ int unBookPrenotation(Hall *hall, char *prenotationCode) {
     return 0;
 }
 
+
+int saveBookingsToFile(Films *filmsStruct, const char *filename){
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        return -1;
+    }
+
+    for (int i = 0; i < filmsStruct->count; i++) {
+        for (int j = 0; j < filmsStruct->list[i].numbers_showtimes; j++) {
+            for (int r = 0; r < filmsStruct->list[i].rows; r++) {
+                for (int c = 0; c < filmsStruct->list[i].columns; c++) {
+                    if (filmsStruct->list[i].halls[j].seats[r][c].state == BOOKED) {
+                        pthread_mutex_lock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
+                        fprintf(file, "%d.%d.%c%c.%s\n", i, j, 'A' + r, '1' + c, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
+                        pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
+                    }
+                }
+            }
+        }
+    }
+
+    fflush(file);
+    fclose(file);
+    return 0;
+}
+
+int loadBookingsFromFile(Films *filmsStruct, const char *filename){
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return -1;
+    }
+
+    char line[1024] = {0};
+    char *token;
+    char *saveptr;
+    int film_id, showtime_id;
+    char seat[3] = {0};
+    char bookingCode[18] = {0};
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        token = strtok_r(line, ".", &saveptr);
+        if (token != NULL) {
+            film_id = safeStrToInt(token);
+            token = strtok_r(NULL, ".", &saveptr);
+            if (token != NULL) {
+                showtime_id = safeStrToInt(token);
+                token = strtok_r(NULL, ".", &saveptr);
+                if (token != NULL) {
+                    strncpy(seat, token, sizeof(seat));
+                    token = strtok_r(NULL, ".", &saveptr);
+                    if (token != NULL) {
+                        strncpy(bookingCode, token, sizeof(bookingCode));
+                        bookSeat(&filmsStruct->list[film_id].halls[showtime_id], seat, bookingCode);
+                    }
+                }
+            }
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
 
 void printTicket(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size){
     appendToBuffer(buff, remaining_size, "============== BIGLIETTO =============\n");
