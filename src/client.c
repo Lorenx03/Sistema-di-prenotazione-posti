@@ -256,7 +256,8 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             if(sendHttpRequest(targetHost, POST, "/book", requestBody, response) != HTTP_STATUS_CREATED){
                 removeHttpHeaders(response);
                 printf("%s\n", response);
-                sleep(2);
+                printf("(Premi invio per riprovare)");
+                waitForKey();
                 break;
             }
             removeHttpHeaders(response);
