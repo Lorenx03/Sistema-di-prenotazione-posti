@@ -120,12 +120,14 @@ int unBookPrenotation(Hall *hall, char *prenotationCode) {
 
     for (int i = 0; i < hall->rows; i++){
         for (int j = 0; j < hall->columns; j++){
-            getNthToken(hall->seats[i][j].booking_code, "-", 0, currentPrenotaionCode, sizeof(currentPrenotaionCode));
-            if(strcmp(currentPrenotaionCode, prenotationCode) == 0){
-                if(pthread_mutex_trylock(&hall->seats[i][j].lock) == 0){
-                    hall->seats[i][j].state = FREE;
-                    memset(hall->seats[i][j].booking_code, 0, sizeof(hall->seats[i][j].booking_code));
-                    pthread_mutex_unlock(&hall->seats[i][j].lock);
+            if(hall->seats[i][j].state == BOOKED && strlen(hall->seats[i][j].booking_code) > 0){
+                getNthToken(hall->seats[i][j].booking_code, "-", 0, currentPrenotaionCode, sizeof(currentPrenotaionCode));
+                if(strcmp(currentPrenotaionCode, prenotationCode) == 0){
+                    if(pthread_mutex_trylock(&hall->seats[i][j].lock) == 0){
+                        hall->seats[i][j].state = FREE;
+                        memset(hall->seats[i][j].booking_code, 0, sizeof(hall->seats[i][j].booking_code));
+                        pthread_mutex_unlock(&hall->seats[i][j].lock);
+                    }
                 }
             }
         }

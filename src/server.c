@@ -177,7 +177,7 @@ void POSTBookSeat(char *request, char *response){
                             return;
                             break;
                         case 2:
-                            httpResponseBuilder(response, HTTP_STATUS_CONFLICT, "Bad Request", "Posto già prenotato\n");
+                            httpResponseBuilder(response, HTTP_STATUS_CONFLICT, "Bad Request", "Errore - Posto già prenotato\n");
                             unBookPrenotation(&film->halls[hall_index - 1], prenotationCode);
                             return;
                             break;

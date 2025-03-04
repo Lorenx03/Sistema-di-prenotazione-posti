@@ -254,8 +254,10 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             // NOTE - POST /book
             printf("\033[1J\n");
             if(sendHttpRequest(targetHost, POST, "/book", requestBody, response) != HTTP_STATUS_CREATED){
-                printf("Errore nella richiesta\n");
-                return;
+                removeHttpHeaders(response);
+                printf("%s\n", response);
+                sleep(2);
+                break;
             }
             removeHttpHeaders(response);
 
