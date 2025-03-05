@@ -73,70 +73,58 @@ void generateHallMapResponse(Hall *hall, char *buffer, size_t remaining_size) {
 
 // =============================== BOOKING =================================
 
-int bookSeat(Hall *hall, char *seat, char *bookingCode) {
-    if(hall == NULL || seat == NULL){
-        fprintf(stderr, "bookSeat: NULL pointer\n");
+int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCodes[numSeats][18]) {
+    if(hall == NULL || seats == NULL || bookingCodes == NULL || numSeats <= 0 || numSeats > 4){
+        fprintf(stderr, "bookSeat: ERROR -  Bad parameters\n");
         return 1;
     }
 
-    //Check if the seat has the correct format
-    if (strlen(seat) < 2 || strlen(seat) > 3) {
-        fprintf(stderr, "bookSeat: Invalid seat format\n");
-        return 1;
-    }
-
-    int row = seat[0] - 'A';
-    int column = safeStrToInt(&seat[1]) - 1;
-
-    if (row < 0 || row >= hall->rows || column < 0 || column > hall->columns) {
-        fprintf(stderr, "bookSeat: Invalid seat\n");
-        return 1;
-    }
-
-    if (hall->seats[row][column].state == FREE && pthread_mutex_trylock(&hall->seats[row][column].lock) == 0) {
-        hall->seats[row][column].state = BOOKED;
-        strncpy(hall->seats[row][column].booking_code, bookingCode, sizeof(hall->seats[row][column].booking_code));
-        pthread_mutex_unlock(&hall->seats[row][column].lock);
-        return 0;
-    }else{
-        fprintf(stderr, "bookSeat: Seat already booked\n");
-        return 2;
-    }
-}
-
-
-int unBookPrenotation(Hall *hall, char *prenotationCode) {
-    char currentPrenotaionCode[9] = {0};
-
-    if(hall == NULL || prenotationCode == NULL){
-        fprintf(stderr, "bookSeat: NULL pointer\n");
-        return 1;
-    }
-
-    if(strlen(prenotationCode) != 8){
-        fprintf(stderr, "bookSeat: Invalid booking code\n");
-        return 1;
-    }
-
-    for (int i = 0; i < hall->rows; i++){
-        for (int j = 0; j < hall->columns; j++){
-            if(hall->seats[i][j].state == BOOKED && strlen(hall->seats[i][j].booking_code) > 0){
-                getNthToken(hall->seats[i][j].booking_code, "-", 0, currentPrenotaionCode, sizeof(currentPrenotaionCode));
-                if(strcmp(currentPrenotaionCode, prenotationCode) == 0){
-                    if(pthread_mutex_trylock(&hall->seats[i][j].lock) == 0){
-                        hall->seats[i][j].state = FREE;
-                        memset(hall->seats[i][j].booking_code, 0, sizeof(hall->seats[i][j].booking_code));
-                        pthread_mutex_unlock(&hall->seats[i][j].lock);
-                    }
-                }
+    for (int i = 0; i < numSeats; i++){
+        // Lock the seat, we use trylock to avoid blocking, if the seat is already locked it means that another thread is booking it
+        if(
+            pthread_mutex_trylock(&hall->seats[seats[i][0]][seats[i][1]].lock) != 0 ||
+            hall->seats[seats[i][0]][seats[i][1]].state == BOOKED
+        ){
+            fprintf(stderr, "bookSeat: ERROR - Seat being booked or already boocked\n");
+            for (int j = 0; j < i; i++){
+                pthread_mutex_unlock(&hall->seats[seats[j][0]][seats[j][1]].lock);
             }
+            return 1;
         }
+    }
+
+    SeatState temp[4] = {FREE, FREE, FREE, FREE};
+    // Now that we locked the seats, we can book them
+    for (int i = 0; i < numSeats; i++) {
+        // Check if seat coordinates are valid
+        if (seats[i] == NULL || 
+            seats[i][0] < 0 || 
+            seats[i][0] >= hall->rows ||
+            seats[i][1] < 0 || seats[i][1] >= hall->columns
+        ) {
+            fprintf(stderr, "bookSeat: Invalid seat coordinates\n");
+
+            // Reset the seats that we booked before the error
+            for (int j = 0; j < i; j++){
+                hall->seats[seats[j][0]][seats[j][1]].state = temp[j];
+                memset(hall->seats[seats[j][0]][seats[j][1]].booking_code, 0, sizeof(hall->seats[seats[j][0]][seats[j][1]].booking_code));
+                pthread_mutex_unlock(&hall->seats[seats[j][0]][seats[j][1]].lock);
+            }
+            return 1;
+        }
+
+        temp[i] = hall->seats[seats[i][0]][seats[i][1]].state;
+        hall->seats[seats[i][0]][seats[i][1]].state = BOOKED;
+        strncpy(hall->seats[seats[i][0]][seats[i][1]].booking_code, bookingCodes[i], sizeof(hall->seats[seats[i][0]][seats[i][1]].booking_code));
+
+        pthread_mutex_unlock(&hall->seats[seats[i][0]][seats[i][1]].lock);
     }
 
     return 0;
 }
 
 
+// TODO: Change this
 int saveBookingsToFile(Films *filmsStruct, const char *filename){
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
@@ -150,7 +138,7 @@ int saveBookingsToFile(Films *filmsStruct, const char *filename){
                 for (int c = 0; c < filmsStruct->list[i].columns; c++) {
                     if (filmsStruct->list[i].halls[j].seats[r][c].state == BOOKED) {
                         pthread_mutex_lock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
-                        fprintf(file, "%d.%d.%c%c.%s\n", i, j, 'A' + r, '1' + c, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
+                        fprintf(file, "%d.%d.%c%c.%s.\n", i, j, 'A' + r, '1' + c, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
                         pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
                     }
                 }
@@ -167,33 +155,97 @@ int loadBookingsFromFile(Films *filmsStruct, const char *filename){
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
-        return -1;
+        return 1;
     }
 
     char line[1024] = {0};
     char *token;
     char *saveptr;
     int film_id, showtime_id;
-    char seat[3] = {0};
-    char bookingCode[18] = {0};
+    int seat[1][2];
+    char booking_code[1][18] = {0};
 
+    int i = 1;
     while (fgets(line, sizeof(line), file) != NULL) {
         token = strtok_r(line, ".", &saveptr);
-        if (token != NULL) {
-            film_id = safeStrToInt(token);
-            token = strtok_r(NULL, ".", &saveptr);
-            if (token != NULL) {
-                showtime_id = safeStrToInt(token);
-                token = strtok_r(NULL, ".", &saveptr);
-                if (token != NULL) {
-                    strncpy(seat, token, sizeof(seat));
-                    token = strtok_r(NULL, ".", &saveptr);
-                    if (token != NULL) {
-                        strncpy(bookingCode, token, sizeof(bookingCode));
-                        bookSeat(&filmsStruct->list[film_id].halls[showtime_id], seat, bookingCode);
+        i = 1;
+        while (token != NULL && i <= 4) {
+            switch (i){
+                case 1:
+                    film_id = safeStrToInt(token);
+                    if (film_id < 0 || film_id >= filmsStruct->count){
+                        fprintf(stderr, "loadBookingsFromFile: Invalid film id\n");
+                        fclose(file);
+                        return i;
                     }
-                }
+                break;
+
+                case 2:
+                    showtime_id = safeStrToInt(token);
+                    if (showtime_id < 0 || showtime_id >= filmsStruct->list[film_id].numbers_showtimes){
+                        fprintf(stderr, "loadBookingsFromFile: Invalid showtime id\n");
+                        fclose(file);
+                        return i;
+                    }
+                break;
+
+                case 3:
+                    if (strlen(token) < 2 || strlen(token) > 3){
+                        fprintf(stderr, "loadBookingsFromFile: Invalid seat\n");
+                        fclose(file);
+                        return i;
+                    }
+
+                    seat[0][0] = token[0] - 'A';
+                    seat[0][1] = safeStrToInt(&token[1]) - 1;
+
+                    if (
+                        seat[0][0] < 0 ||
+                        seat[0][0] >= filmsStruct->list[film_id].rows ||
+                        seat[0][1] < 0 ||
+                        seat[0][1] >= filmsStruct->list[film_id].columns
+                    ){
+                        fprintf(stderr, "loadBookingsFromFile: Invalid seat\n");
+                        fclose(file);
+                        return i;
+                    }
+                break;
+
+                case 4:
+                    // example Q9LP15AJ-FD8OLH3Y
+                    if (strlen(token) != 17 || strcspn(token, "-") != 8){
+                        fprintf(stderr, "loadBookingsFromFile: Invalid booking code\n");
+                        fclose(file);
+                        return i;
+                    }
+
+                    strncpy(booking_code[0], token, sizeof(booking_code));
+                break;
+
+                default:
+                break;
             }
+
+            token = strtok_r(NULL, ".", &saveptr);
+            i++;
+        }
+
+        if (i == 5){
+            //DEBUG
+            // printf("film_id: %d\n", film_id);
+            // printf("showtime_id: %d\n", showtime_id);
+            // printf("seat: %c%d\n", seat[0][0] + 'A', seat[0][1] + 1);
+            // printf("booking_code: %s\n", booking_code[0]);
+
+            if (bookSeats(&filmsStruct->list[film_id].halls[showtime_id], 1, seat, booking_code) != 0){
+                fprintf(stderr, "loadBookingsFromFile: Error booking seat\n");
+                fclose(file);
+                return 5;
+            }
+        }else{
+            fprintf(stderr, "loadBookingsFromFile: Invalid line\n");
+            fclose(file);
+            return 6;
         }
     }
 
@@ -201,7 +253,8 @@ int loadBookingsFromFile(Films *filmsStruct, const char *filename){
     return 0;
 }
 
-void printTicket(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size){
+
+void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size){
     appendToBuffer(buff, remaining_size, "============== BIGLIETTO =============\n");
     appendToBuffer(buff, remaining_size, "Codice prenotazione: %s\n", bookingCode);
     appendToBuffer(buff, remaining_size, "Film: %s\n", filmTitle);

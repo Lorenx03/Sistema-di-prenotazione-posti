@@ -139,66 +139,101 @@ void POSTBookSeat(char *request, char *response){
     int selected_film = -1, hall_index = -1;
     char showtime[6] = {0};
 
+    // Prenotation code -> A unqiue code for the prenotation, a prenotation can have multiple bookings
     char prenotationCode[9] = {0};
-    char seatPrenotationCode[9] = {0};
-    char bookingCode[18] = {0};
     generateRandomString(prenotationCode, sizeof(prenotationCode)-1);
 
-    if (token != NULL) {
+    // reservationIdentifier -> A unique code for the booking
+    char bookingCode[9] = {0};
+    char reservationIdentifier[9] = {0};
+    generateRandomString(bookingCode, sizeof(bookingCode)-1);
+    char bookingCodes[4][18] = {0};
+
+
+
+    int seatsToBook[4][2];
+    for (int i = 0; i < 4; i++){
+        seatsToBook[i][0] = -1;
+        seatsToBook[i][1] = -1;
+    }
+
+
+    if (token != NULL) { // 1st token is the film index
         selected_film = safeStrToInt(token);
         token = strtok_r(NULL, ".", &saveptr);
-        if (token != NULL) {
+
+        if (selected_film < 0 || selected_film > cinemaFilms.count){
+            snprintf(response_body, sizeof(response_body), "Film non trovato\n");
+            httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+            return;
+        }
+
+        if (token != NULL) { // 2nd token is the hall index
             hall_index = safeStrToInt(token);
+
+            if (hall_index < 0 || hall_index > cinemaFilms.list[selected_film - 1].numbers_showtimes){
+                snprintf(response_body, sizeof(response_body), "Sala non trovata\n");
+                httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+                return;
+            }
 
             printf("selected_film: %d\n", selected_film);
             printf("hall_index: %d\n", hall_index);
 
-            if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
-                Film *film = &cinemaFilms.list[selected_film - 1];
-                getNthToken(film->showtimes, ",", hall_index - 1, showtime, sizeof(showtime));
+            // Select the film and the hall
+            Film *film = &cinemaFilms.list[selected_film - 1];
+            // Showtime for the ticket
+            getNthToken(film->showtimes, ",", hall_index - 1, showtime, sizeof(showtime));
 
-                // Append the prenotation code to the response, for filename of the tickets
-                appendToBuffer(&current_ptr, &buffSize, "%s\n", prenotationCode);
-                
-                token = strtok_r(NULL, ".", &saveptr);
-                while(token != NULL){
-                    generateRandomString(seatPrenotationCode, sizeof(seatPrenotationCode)-1);
-                    snprintf(bookingCode, sizeof(bookingCode), "%s-%s", prenotationCode, seatPrenotationCode);
-
-                    printf("token: %s  --  %s\n", token, bookingCode);
-                    // bookSeat(&film->halls[hall_index - 1], token, bookingCode);
-
-                    switch (bookSeat(&film->halls[hall_index - 1], token, bookingCode)){
-                        case 0:
-                            break;
-                        case 1:
-                            httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Errore nella prenotazione del posto\n");
-                            unBookPrenotation(&film->halls[hall_index - 1], prenotationCode);
-                            return;
-                            break;
-                        case 2:
-                            httpResponseBuilder(response, HTTP_STATUS_CONFLICT, "Bad Request", "Errore - Posto già prenotato\n");
-                            unBookPrenotation(&film->halls[hall_index - 1], prenotationCode);
-                            return;
-                            break;
-                    }
-
-                    printTicket(&current_ptr, bookingCode, film->name, showtime, token, &buffSize);
-                    token = strtok_r(NULL, ".", &saveptr);
+            // Append the prenotation code to the response, for filename of the tickets
+            appendToBuffer(&current_ptr, &buffSize, "%s\n", prenotationCode);
+            
+            token = strtok_r(NULL, ".", &saveptr); // 3rd, 4th, 5th, 6th token are the seats to book
+            int numSeats = 0;
+            while (token != NULL && numSeats < 4) {
+                if(strlen(token) < 2 || strlen(token) > 3){
+                    snprintf(response_body, sizeof(response_body), "Posto non valido\n");
+                    httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+                    return;
                 }
 
-                printf("response_body: %s\n", response_body);
-                httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
+                int row = token[0] - 'A';
+                int column = safeStrToInt(&token[1]) - 1; // -2 if error
+                
+                if (row < 0 || row >= film->rows || column < 0 || column >= film->columns){
+                    snprintf(response_body, sizeof(response_body), "Posto non valido\n");
+                    httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+                    return;
+                }
+
+                seatsToBook[numSeats][0] = row;
+                seatsToBook[numSeats][1] = column;
+
+                generateRandomString(reservationIdentifier, sizeof(reservationIdentifier)-1);
+                snprintf(bookingCodes[numSeats], sizeof(bookingCodes[numSeats]), "%s-%s", bookingCode, reservationIdentifier);
+
+                token = strtok_r(NULL, ".", &saveptr);
+                numSeats++;
+            }
+
+            if (numSeats == 0){
+                snprintf(response_body, sizeof(response_body), "Nessun posto selezionato\n");
+                httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+                return;
+            }
+
+            if (bookSeats(&film->halls[hall_index - 1], numSeats, seatsToBook, bookingCodes) == 0){
+                for (int i = 0; i < numSeats; i++){
+                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, request, &buffSize);
+                }
                 saveBookingsToFile(&cinemaFilms, "bookings.csv");
-                return;
+                httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
             }else{
-                snprintf(response_body, sizeof(response_body), "Film non trovato\n");
-                httpResponseBuilder(response, HTTP_STATUS_NOT_FOUND, "Not Found", response_body);
-                return;
+                snprintf(response_body, sizeof(response_body), "Errore nella prenotazione\n");
+                httpResponseBuilder(response, HTTP_STATUS_INTERNAL_SERVER_ERROR, "Internal Server Error", "Errore interno del server\n");
             }
         }
     }
-    httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
 }
 
 
