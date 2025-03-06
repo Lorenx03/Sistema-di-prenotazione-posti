@@ -217,7 +217,9 @@ void POSTBookSeat(char *request, char *response){
 
             if (bookSeats(&film->halls[hall_index - 1], numSeats, seatsToBook, bookingCodes) == 0){
                 for (int i = 0; i < numSeats; i++){
-                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, request, &buffSize);
+                    char seatTicket[5] = {0};
+                    snprintf(seatTicket, sizeof(seatTicket), "%c%d", seatsToBook[i][0] + 'A', seatsToBook[i][1] + 1);
+                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, seatTicket, &buffSize);
                 }
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
             }else{
@@ -248,9 +250,7 @@ void POSTUnbookSeat(char *request, char *response) {
                             (
                                 strlen(request) == 8 &&
                                 strncmp(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, request, 8) == 0
-                            ) 
-                            ||
-                            (
+                            ) || (
                                 strlen(request) == 17 &&
                                 strncmp(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, request, 17) == 0
                             )
@@ -258,9 +258,9 @@ void POSTUnbookSeat(char *request, char *response) {
                     ){
                         if(pthread_mutex_trylock(&cinemaFilms.list[i].halls[j].seats[k][l].lock) == 0){
                             found = true;
-                            
+
                             printf("Removing prenotation: %s\n", cinemaFilms.list[i].halls[j].seats[k][l].booking_code);
-                            cinemaFilms.list[i].halls[j].seats[k][l].state = FREE;
+                            cinemaFilms.list[i].halls[j].seats[k][l].state = !(k == (cinemaFilms.list[i].halls[j].rows-1) && l >= 0 && l <= 2) ? FREE : DISABLED;
                             memset(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, 0, sizeof(cinemaFilms.list[i].halls[j].seats[k][l].booking_code));
 
                             pthread_mutex_unlock(&cinemaFilms.list[i].halls[j].seats[k][l].lock);
@@ -331,7 +331,7 @@ int main() {
     CronJob jobs[1] = {
         {
             .job = saveBookingsCronJob,
-            .interval = 3
+            .interval = 10
         }
     };
     
