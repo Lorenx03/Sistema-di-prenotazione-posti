@@ -129,7 +129,7 @@ int saveBookingsToFile(Films *filmsStruct, const char *filename){
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Error opening file");
-        return -1;
+        return 1;
     }
 
     for (int i = 0; i < filmsStruct->count; i++) {
@@ -137,9 +137,11 @@ int saveBookingsToFile(Films *filmsStruct, const char *filename){
             for (int r = 0; r < filmsStruct->list[i].rows; r++) {
                 for (int c = 0; c < filmsStruct->list[i].columns; c++) {
                     if (filmsStruct->list[i].halls[j].seats[r][c].state == BOOKED) {
-                        pthread_mutex_lock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
-                        fprintf(file, "%d.%d.%c%c.%s.\n", i, j, 'A' + r, '1' + c, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
-                        pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
+                        // Again we use trylock, not to avoid blocking but if the lock is locked it means that the seat is being booked, and thus is in a non-consistent state, so we skip it to check on it later.
+                        if (pthread_mutex_trylock(&filmsStruct->list[i].halls[j].seats[r][c].lock) == 0) {
+                            fprintf(file, "%d.%d.%c%d.%s\n", i, j, 'A' + r, c + 1, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
+                            pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
+                        }
                     }
                 }
             }
@@ -213,6 +215,10 @@ int loadBookingsFromFile(Films *filmsStruct, const char *filename){
 
                 case 4:
                     // example Q9LP15AJ-FD8OLH3Y
+                    if (strcspn(token, "\n")){
+                        token[strcspn(token, "\n")] = 0;
+                    }
+                    
                     if (strlen(token) != 17 || strcspn(token, "-") != 8){
                         fprintf(stderr, "loadBookingsFromFile: Invalid booking code\n");
                         fclose(file);

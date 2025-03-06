@@ -226,7 +226,6 @@ void POSTBookSeat(char *request, char *response){
                 for (int i = 0; i < numSeats; i++){
                     printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, request, &buffSize);
                 }
-                saveBookingsToFile(&cinemaFilms, "bookings.csv");
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
             }else{
                 snprintf(response_body, sizeof(response_body), "Errore nella prenotazione\n");
@@ -234,6 +233,11 @@ void POSTBookSeat(char *request, char *response){
             }
         }
     }
+}
+
+// Cron job that saves the current state of the data structures to a file, so that the threads dont have to do it
+void saveBookingsCronJob(void) {
+    saveBookingsToFile(&cinemaFilms, "bookings.csv");
 }
 
 
@@ -273,10 +277,22 @@ int main() {
     addHttpSubroute(&filmsRoute, &filmsListRoute); // /films/list
     addHttpSubroute(&filmsRoute, &filmHallMapRoute); // /films/map
 
+    CronJob jobs[1] = {
+        {
+            .job = saveBookingsCronJob,
+            .interval = 10
+        }
+    };
+    
+    HttpServerCronJobs cronJobs = {
+        .jobs = jobs,
+        .numJobs = 1
+    };
 
     HttpServer server = {
         .port = 8090,
         .numThreads = 1,
+        .cronJobs = &cronJobs,
         .root = &rootRoute
     };
 

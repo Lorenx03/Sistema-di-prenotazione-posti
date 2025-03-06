@@ -232,6 +232,28 @@ void *workerRoutine(void *params) {
     return NULL;
 }
 
+// ----------------------- CRON JOBS -----------------------
+
+void runJob(CronJob *job) {
+    while (running) {
+        job->job();
+        sleep(job->interval);
+    }
+}
+
+void runCronJobs(void *params) {
+    HttpServerCronJobs *jobs = (HttpServerCronJobs*)params;
+
+    pthread_t threads[jobs->numJobs];       
+    for (int i = 0; i < jobs->numJobs; i++) {
+        pthread_create(&threads[i], NULL, (void*)runJob, &jobs->jobs[i]);
+    }
+
+    for (int i = 0; i < jobs->numJobs; i++) {
+        pthread_join(threads[i], NULL);
+    }
+}
+
 
 // ----------------------- SERVER -----------------------
 
@@ -239,19 +261,13 @@ void handleSig(int sig) {
     (void)sig;
     printf("Stopping server...\n");
     running = 0;
-    
-    printf("Server stopped - (press any key to continue)\n");
-    waitForKey();
 }
 
 int httpServerServe(HttpServer *server) {
     int serverSocket; // Socket file descriptor
     struct sockaddr_in serverAddress; // Server address
 
-    pthread_t threads[server->numThreads];
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_t threads[server->numThreads]; // Worker threads
 
     // Bind socket to an address and port
     memset((char *)&serverAddress, 0, sizeof(serverAddress));
@@ -303,7 +319,7 @@ int httpServerServe(HttpServer *server) {
 
     // Threadpool
     for (int i = 1; i < server->numThreads; i++) {
-        if (pthread_create(&threads[i], &attr, workerRoutine, &workerParams[i]) != 0) {
+        if (pthread_create(&threads[i-1], NULL, workerRoutine, &workerParams[i]) != 0) {
             fprintf(stderr, "Thread creation failed: %s\n", strerror(errno));
             close(serverSocket);
             return EXIT_FAILURE;
@@ -319,10 +335,33 @@ int httpServerServe(HttpServer *server) {
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
+    // Cron jobs
+    pthread_t cronThread;
+    if (server->cronJobs->numJobs > 0) {
+        if (pthread_create(&cronThread, NULL, (void*)runCronJobs, server->cronJobs) != 0) {
+            fprintf(stderr, "Cron thread creation failed: %s\n", strerror(errno));
+            close(serverSocket);
+            return EXIT_FAILURE;
+        }
+    }
+
     workerRoutine(&workerParams[0]);
 
     // Cleanup
+
+    // Join all the threads
+    for (int i = 1; i < server->numThreads; i++) {
+        pthread_join(threads[i], NULL);
+    }       
+
+    if (server->cronJobs->numJobs > 0) {
+        pthread_join(cronThread, NULL);
+    }
+
     shutdown(serverSocket, SHUT_RDWR);
     close(serverSocket);
+
+    printf("Server stopped - (press any key to continue)\n");
+    waitForKey();
     return 0;
 }

@@ -59,10 +59,21 @@ typedef struct parsedHttpRequest {
     char *body;
 } ParsedHttpRequest;
 
+typedef struct cronJob {
+    void (*job)(void);   
+    int interval;
+} CronJob;
+
+typedef struct httpServerCronJobs {
+    CronJob *jobs;
+    int numJobs;
+} HttpServerCronJobs;
+
 // Http server struct
 typedef struct httpServer {
     short port;
     short numThreads;
+    HttpServerCronJobs *cronJobs;
     HttpRoute *root;
 } HttpServer;
 
