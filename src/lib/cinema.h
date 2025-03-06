@@ -63,5 +63,6 @@ void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *fi
 // int unBookPrenotation(Hall *hall, char *prenotationCode);
 int saveBookingsToFile(Films *filmsStruct, const char *filename);
 int loadBookingsFromFile(Films *filmsStruct, const char *filename);
+void freeFilmsList(Films *filmsStruct);
 
 #endif

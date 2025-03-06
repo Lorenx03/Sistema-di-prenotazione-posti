@@ -355,5 +355,7 @@ int main() {
         return 1;
     }
 
+    // cleanup
+    freeFilmsList(&cinemaFilms);
     return 0;
 }

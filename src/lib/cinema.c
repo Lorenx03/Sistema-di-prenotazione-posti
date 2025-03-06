@@ -52,6 +52,32 @@ void initFilmsList(const char *filename, Films *filmsStruct){
     }
 }
 
+void freeFilmsList(Films *filmsStruct) {
+    if (filmsStruct->list == NULL) {
+        fprintf(stderr, "freeFilmsList: filmsStruct->list is NULL\n");
+        return;
+    }
+
+    for (int i = 0; i < filmsStruct->count; i++) {
+        Film *film = &filmsStruct->list[i];
+        for (int s = 0; s < film->numbers_showtimes; s++) {
+            Hall *hall = &film->halls[s];
+            for (int r = 0; r < hall->rows; r++) {
+                for (int c = 0; c < hall->columns; c++) {
+                    pthread_mutex_destroy(&hall->seats[r][c].lock);
+                }
+                free(hall->seats[r]);
+            }
+            free(hall->seats);
+        }
+        free(film->halls);
+    }
+
+    free(filmsStruct->list);
+    filmsStruct->list = NULL;
+    filmsStruct->count = 0;
+}
+
 
 // ================================ HALL MAP ================================
 
