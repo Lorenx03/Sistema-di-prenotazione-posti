@@ -9,7 +9,6 @@
 
 // Global context
 Films cinemaFilms = {0};
-
 // DEBUG
 // void GETrootHandler(char *request, char *response) {
 //     char response_body[100];
@@ -150,7 +149,6 @@ void POSTBookSeat(char *request, char *response){
     char bookingCodes[4][18] = {0};
 
 
-
     int seatsToBook[4][2];
     for (int i = 0; i < 4; i++){
         seatsToBook[i][0] = -1;
@@ -163,7 +161,6 @@ void POSTBookSeat(char *request, char *response){
         token = strtok_r(NULL, ".", &saveptr);
 
         if (selected_film < 0 || selected_film > cinemaFilms.count){
-            snprintf(response_body, sizeof(response_body), "Film non trovato\n");
             httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
             return;
         }
@@ -172,7 +169,6 @@ void POSTBookSeat(char *request, char *response){
             hall_index = safeStrToInt(token);
 
             if (hall_index < 0 || hall_index > cinemaFilms.list[selected_film - 1].numbers_showtimes){
-                snprintf(response_body, sizeof(response_body), "Sala non trovata\n");
                 httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
                 return;
             }
@@ -192,7 +188,6 @@ void POSTBookSeat(char *request, char *response){
             int numSeats = 0;
             while (token != NULL && numSeats < 4) {
                 if(strlen(token) < 2 || strlen(token) > 3){
-                    snprintf(response_body, sizeof(response_body), "Posto non valido\n");
                     httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
                     return;
                 }
@@ -201,7 +196,6 @@ void POSTBookSeat(char *request, char *response){
                 int column = safeStrToInt(&token[1]) - 1; // -2 if error
                 
                 if (row < 0 || row >= film->rows || column < 0 || column >= film->columns){
-                    snprintf(response_body, sizeof(response_body), "Posto non valido\n");
                     httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
                     return;
                 }
@@ -217,7 +211,6 @@ void POSTBookSeat(char *request, char *response){
             }
 
             if (numSeats == 0){
-                snprintf(response_body, sizeof(response_body), "Nessun posto selezionato\n");
                 httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
                 return;
             }
@@ -228,15 +221,68 @@ void POSTBookSeat(char *request, char *response){
                 }
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
             }else{
-                snprintf(response_body, sizeof(response_body), "Errore nella prenotazione\n");
                 httpResponseBuilder(response, HTTP_STATUS_INTERNAL_SERVER_ERROR, "Internal Server Error", "Errore interno del server\n");
             }
         }
     }
 }
 
+// Http route: /unbook
+void POSTUnbookSeat(char *request, char *response) {
+    if (strlen(request) == 0) {
+        httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+        return;
+    }
+    bool found = false;
+
+    printf("POSTUnbookSeat - %s\n", request);
+
+    for(int i = 0; i < cinemaFilms.count; i++){
+        for(int j = 0; j < cinemaFilms.list[i].numbers_showtimes; j++){
+            for(int k = 0; k < cinemaFilms.list[i].halls[j].rows; k++){
+                for(int l = 0; l < cinemaFilms.list[i].halls[j].columns; l++){
+                    if (
+                        cinemaFilms.list[i].halls[j].seats[k][l].state == BOOKED &&
+                        strlen(cinemaFilms.list[i].halls[j].seats[k][l].booking_code) == 17 &&
+                        (   
+                            (
+                                strlen(request) == 8 &&
+                                strncmp(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, request, 8) == 0
+                            ) 
+                            ||
+                            (
+                                strlen(request) == 17 &&
+                                strncmp(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, request, 17) == 0
+                            )
+                        )
+                    ){
+                        if(pthread_mutex_trylock(&cinemaFilms.list[i].halls[j].seats[k][l].lock) == 0){
+                            found = true;
+                            
+                            printf("Removing prenotation: %s\n", cinemaFilms.list[i].halls[j].seats[k][l].booking_code);
+                            cinemaFilms.list[i].halls[j].seats[k][l].state = FREE;
+                            memset(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, 0, sizeof(cinemaFilms.list[i].halls[j].seats[k][l].booking_code));
+
+                            pthread_mutex_unlock(&cinemaFilms.list[i].halls[j].seats[k][l].lock);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (found) {
+        httpResponseBuilder(response, HTTP_STATUS_OK, "OK", "Prenoazione cancellata con successo.\n");
+    }else{
+        httpResponseBuilder(response, HTTP_STATUS_NOT_FOUND, "Not Found", "Prenoazione non trovata.\n");
+    }
+}
+
+
+
 // Cron job that saves the current state of the data structures to a file, so that the threads dont have to do it
 void saveBookingsCronJob(void) {
+    printf("Saving bookings to file\n");
     saveBookingsToFile(&cinemaFilms, "bookings.csv");
 }
 
@@ -269,9 +315,14 @@ int main() {
     bookRoute.name = "book";
     bookRoute.handlers[POST] = POSTBookSeat;
 
+    HttpRoute bookUnbookRoute = {0};
+    bookUnbookRoute.name = "unbook";
+    bookUnbookRoute.handlers[POST] = POSTUnbookSeat;
+
 
     addHttpSubroute(&rootRoute, &filmsRoute); // /films
     addHttpSubroute(&rootRoute, &bookRoute); // /book
+    addHttpSubroute(&rootRoute, &bookUnbookRoute); // /unbook
 
     addHttpSubroute(&filmsRoute, &bookShowtimesListRoute); // /films/showtimes
     addHttpSubroute(&filmsRoute, &filmsListRoute); // /films/list
@@ -280,7 +331,7 @@ int main() {
     CronJob jobs[1] = {
         {
             .job = saveBookingsCronJob,
-            .interval = 10
+            .interval = 3
         }
     };
     
@@ -303,5 +354,6 @@ int main() {
         fprintf(stderr, "Error starting server\n");
         return 1;
     }
+
     return 0;
 }

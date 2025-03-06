@@ -306,6 +306,115 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
 
 
 
+void unBookSeatPage(TargetHost *targetHost) {
+    char response[4096];
+    int currentPage = -1;
+    char seatCode[1024] = {0};
+
+    do{
+        switch (currentPage) {
+            case 0:
+            break;
+
+            case -1:
+                printf("\033[1J\n");
+                printf("\033[1;31mCancellazione prenotazione\033[0m\n");
+                printf("==========================\n");
+                printf(" 0. Indietro\n");
+                printf(" 1. Singolo posto\n");
+                printf(" 2. Prenotazione intera\n\n");
+
+                printf("Inserisci la tua scelta: ");
+                read_int(&currentPage);
+            break;
+
+            case 1:
+                printf("\033[1J\n");
+                printf("\033[1;31mCancellazione prenotazione -> Singolo posto\033[0m\n");
+                printf("Inserisci il codice del sedile Es: 80MMSYNB-5698X8B8\n\n");
+                printf("Codice (0 = indietro): ");
+                read_str(seatCode);
+
+                if (strcmp(seatCode, "0") == 0) {
+                    currentPage = -1;
+                    break;
+                }
+
+                if (strlen(seatCode) != 17 || strcspn(seatCode, "-") != 8) {
+                    printf("\033[1;31mCodice non valido\033[0m\n");
+                    printf("(Premi invio per riprovare)");
+                    waitForKey();
+                    currentPage = 1;
+                    break;
+                }
+
+                if(sendHttpRequest(targetHost, POST, "/unbook", seatCode, response) != HTTP_STATUS_OK){
+                    removeHttpHeaders(response);
+                    printf("\033[1;31mErrore nella richiesta: %s\033[0m\n", response);
+                    printf("(Premi invio per riprovare)");
+                    waitForKey();
+                    currentPage = -1; // going back to the selection menu
+                    break;
+                }
+                
+                printf("\033[1J\n");
+                removeHttpHeaders(response);
+                printf("\033[0;32m%s\033[0m\n\n", response);
+
+                printf("(Premi invio per tornare al menù principale)");
+                waitForKey();
+                currentPage = 0;
+            break;
+
+            case 2:
+                printf("\033[1J\n");
+                printf("\033[1;31mCancellazione prenotazione -> Prenotazione Intera\033[0m\n");
+                printf("Inserisci il codice della prenotazione Es: (80MMSYNB)-XXXXXXXX (solo prime 8 cifre)\n\n");
+                printf("Codice (0 = indietro): ");
+                read_str(seatCode);
+
+                if (strcmp(seatCode, "0") == 0) {
+                    currentPage = -1;
+                    break;
+                }
+
+                if (strlen(seatCode) != 8) {
+                    printf("\033[1;31mCodice non valido\033[0m\n");
+                    printf("(Premi invio per riprovare)");
+                    waitForKey();
+                    currentPage = -1; // going back to the selection menu
+                    break;
+                }
+
+                if(sendHttpRequest(targetHost, POST, "/unbook", seatCode, response) != HTTP_STATUS_OK){
+                    removeHttpHeaders(response);
+                    printf("\033[1;31mErrore nella richiesta: %s\033[0m\n", response);
+                    printf("(Premi invio per riprovare)");
+                    waitForKey();
+                    currentPage = -1; // going back to the selection menu
+                    break;
+                }
+                
+                printf("\033[1J\n");
+                removeHttpHeaders(response);
+                printf("\033[0;32m%s\033[0m\n\n", response);
+
+                printf("(Premi invio per tornare al menù principale)");
+                waitForKey();
+                currentPage = 0;
+            break;
+
+            default:
+                printf("\033[1J\n");
+                printf("Scelta non valida\n");
+                printf("(Premi invio per rirpovare)");
+                waitForKey();
+                currentPage = -1;
+            break;
+        }
+    }while (currentPage != 0);
+}
+
 
 int main() {
     int currentPage = 0;
@@ -376,14 +485,14 @@ int main() {
             
             if (choice != 0){
                 bookSeatPages(&targetHost, choice);
-                currentPage = 0;
-            }else{
-                currentPage = 0;
             }
+
+            currentPage = 0;
             break;
         
         case CANCEL_BOOKING:
-            // sendHttpRequest(&targetHost, GET, "/cancel", buffer);
+            unBookSeatPage(&targetHost);
+            currentPage = 0;
             break;
 
         case EXIT:
