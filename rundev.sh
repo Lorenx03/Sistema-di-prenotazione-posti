@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# This script requires tmux to be installed.
+# To install tmux, run the following command:
+# sudo apt-get install tmux
+# For MacOS -> brew install tmux
+
 # Ensure tmux is installed
 if ! command -v tmux &> /dev/null; then
     echo "Error: tmux is not installed. Install it and try again."
