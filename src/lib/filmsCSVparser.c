@@ -64,8 +64,6 @@ void parse_films_csv_line(char *line, Film *film) {
 
     film -> numbers_showtimes = count_showtimes(film);
 
-
-    
     // Handle the last field (since there's no trailing comma)
     buffer[buffer_index] = '\0';  // Null-terminate the buffer
     field = strdup(trim_whitespace(buffer));  // Trim and copy the field

@@ -71,6 +71,12 @@ void freeFilmsList(Films *filmsStruct) {
             free(hall->seats);
         }
         free(film->halls);
+        free(film->name);
+        free(film->genre);
+        free(film->language);
+        free(film->actors);
+        free(film->plot);
+        free(film->showtimes);
     }
 
     free(filmsStruct->list);

@@ -9,12 +9,6 @@
 
 // Global context
 Films cinemaFilms = {0};
-// DEBUG
-// void GETrootHandler(char *request, char *response) {
-//     char response_body[100];
-//     snprintf(response_body, sizeof(response_body), "Root - Thread ID: %ld", (long)pthread_self());
-//     httpResponseBuilder(response, 200, "OK", response_body);
-// }
 
 // Http route: /
 void GETrootHandler(char *request, char *response) {
@@ -342,7 +336,7 @@ int main() {
 
     HttpServer server = {
         .port = 8090,
-        .numThreads = 1,
+        .numThreads = 10,
         .cronJobs = &cronJobs,
         .root = &rootRoute
     };

@@ -268,6 +268,9 @@ int httpServerServe(HttpServer *server) {
     struct sockaddr_in serverAddress; // Server address
 
     pthread_t threads[server->numThreads]; // Worker threads
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     // Bind socket to an address and port
     memset((char *)&serverAddress, 0, sizeof(serverAddress));
@@ -319,14 +322,14 @@ int httpServerServe(HttpServer *server) {
 
     // Threadpool
     for (int i = 1; i < server->numThreads; i++) {
-        if (pthread_create(&threads[i-1], NULL, workerRoutine, &workerParams[i]) != 0) {
+        if (pthread_create(&threads[i-1], &attr, workerRoutine, &workerParams[i]) != 0) {
             fprintf(stderr, "Thread creation failed: %s\n", strerror(errno));
             close(serverSocket);
             return EXIT_FAILURE;
         }
     }
 
-    //Signal handler
+    // Signal handler
     struct sigaction sa;
     sa.sa_handler = handleSig;  
     sa.sa_flags = 0;                
@@ -348,18 +351,14 @@ int httpServerServe(HttpServer *server) {
     workerRoutine(&workerParams[0]);
 
     // Cleanup
-
-    // Join all the threads
-    for (int i = 1; i < server->numThreads; i++) {
-        pthread_join(threads[i], NULL);
-    }       
-
     if (server->cronJobs->numJobs > 0) {
         pthread_join(cronThread, NULL);
     }
 
     shutdown(serverSocket, SHUT_RDWR);
     close(serverSocket);
+
+    pthread_attr_destroy(&attr);
 
     printf("Server stopped - (press any key to continue)\n");
     waitForKey();
