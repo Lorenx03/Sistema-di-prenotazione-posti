@@ -2,6 +2,7 @@
 #include "userInput.h"
 #include "utils.h"
 #include "cinemaMap.h"
+#include <arpa/inet.h>
 
 enum Pages {
     MAIN_MENU = 0,
@@ -415,14 +416,38 @@ void unBookSeatPage(TargetHost *targetHost) {
     }while (currentPage != 0);
 }
 
+// ./client -a <ip> -p <port>
+int main(int argc, char *argv[]) {
+    // Default values
+    char ip_addr[16] = "127.0.0.1";
+    int port = 8090;
 
-int main() {
+    // Parse command line arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+            port = atoi(argv[i + 1]);
+            if (port <= 0 || port > 65535) {
+                fprintf(stderr, "Porta non valida. Deve essere tra 1 e 65535\n");
+                return 1;
+            }
+            i++;
+        } else if (strcmp(argv[i], "-a") == 0 && i + 1 < argc) {
+            struct sockaddr_in sa;
+            if (inet_pton(AF_INET, argv[i + 1], &(sa.sin_addr)) <= 0) {
+                fprintf(stderr, "Indirizzo IP non valido\n");
+                return 1;
+            }
+            strncpy(ip_addr, argv[i + 1], sizeof(ip_addr) - 1);
+            i++;
+        }
+    }
+
     int currentPage = 0;
-    char buffer[4096];
+    char responseBuffer[4096];
 
     TargetHost targetHost = {
-        .ip_addr = "127.0.0.1",
-        .portno = 8090
+        .ip_addr = ip_addr,
+        .portno = port
     };
 
     int choice = 0;
@@ -430,12 +455,12 @@ int main() {
     do{
         switch (currentPage) {
         case MAIN_MENU:
-            if(sendHttpRequest(&targetHost, GET, "/", NULL, buffer) != HTTP_STATUS_OK){
+            if(sendHttpRequest(&targetHost, GET, "/", NULL, responseBuffer) != HTTP_STATUS_OK){
                 printf("Errore nella richiesta\n");
                 return 1;
             }
             
-            printClearedResponse(buffer);
+            printClearedResponse(responseBuffer);
 
             // User input
             printf("\nInserisci la tua scelta: ");
@@ -450,11 +475,11 @@ int main() {
             break;
 
         case FILMS_LIST:
-            if(sendHttpRequest(&targetHost, GET, "/films", NULL, buffer) != HTTP_STATUS_OK){
+            if(sendHttpRequest(&targetHost, GET, "/films", NULL, responseBuffer) != HTTP_STATUS_OK){
                 printf("Errore nella richiesta\n");
                 return 1;
             }
-            printClearedResponse(buffer);
+            printClearedResponse(responseBuffer);
 
             // User input
             printf("(Premi invio per tornare al menù principale)");
@@ -464,14 +489,14 @@ int main() {
             break;
 
         case BOOK_SEAT:
-            if(sendHttpRequest(&targetHost, GET, "/films/list", NULL, buffer ) != HTTP_STATUS_OK){
+            if(sendHttpRequest(&targetHost, GET, "/films/list", NULL, responseBuffer ) != HTTP_STATUS_OK){
                 printf("Errore nella richiesta\n");
                 return 1;
             }
-            printClearedResponse(buffer);
+            printClearedResponse(responseBuffer);
 
             //count lines
-            int film_count = countLinesOfResponse(buffer) - 1;
+            int film_count = countLinesOfResponse(responseBuffer) - 1;
 
             do{
                 // User input

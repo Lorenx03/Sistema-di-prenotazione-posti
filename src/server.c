@@ -280,8 +280,31 @@ void saveBookingsCronJob(void) {
     saveBookingsToFile(&cinemaFilms, "bookings.csv");
 }
 
+// ./server -p <port> -t <numThreads>
+int main(int argc, char *argv[]) {
+    // Default values
+    int port = 8090;
+    int numThreads = 10;
 
-int main() {
+    // Parse command line arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+            port = atoi(argv[i + 1]);
+            if (port <= 0 || port > 65535) {
+                fprintf(stderr, "Porta non valida. Deve essere tra 1 e 65535\n");
+                return 1;
+            }
+            i++;
+        } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
+            numThreads = atoi(argv[i + 1]);
+            if (numThreads <= 0) {
+                fprintf(stderr, "Numero di thread non valido. Deve essere maggiore di 0\n");
+                return 1;
+            }
+            i++;
+        }
+    }
+
     //Random seed for booking code generation
     srand(time(NULL));
     
@@ -335,14 +358,16 @@ int main() {
     };
 
     HttpServer server = {
-        .port = 8090,
-        .numThreads = 10,
+        .port = port,
+        .numThreads = numThreads,
         .cronJobs = &cronJobs,
         .root = &rootRoute
     };
 
     initFilmsList("films.csv", &cinemaFilms);
     loadBookingsFromFile(&cinemaFilms, "bookings.csv");
+
+    printf("Starting server on port %d with %d threads\n", port, numThreads);
 
     if (httpServerServe(&server)) {
         fprintf(stderr, "Error starting server\n");

@@ -19,6 +19,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 #include "userInput.h"
 #include "httpLib.h"

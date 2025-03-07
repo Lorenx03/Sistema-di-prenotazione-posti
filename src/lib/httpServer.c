@@ -254,6 +254,41 @@ void runCronJobs(void *params) {
     }
 }
 
+int printHostInfo() {
+    char hostname[256];
+    struct addrinfo hints, *info, *p;
+    int ret;
+
+    // Get hostname
+    if (gethostname(hostname, sizeof(hostname)) == -1) {
+        perror("gethostname");
+        return EXIT_FAILURE;
+    }
+
+    printf("\n========= HOST INFO =======\n");
+    printf("Hostname: %s\n", hostname);
+
+    // Resolve IP address
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET; // IPv4 only
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((ret = getaddrinfo(hostname, NULL, &hints, &info)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+        return EXIT_FAILURE;
+    }
+
+    // Print all resolved addresses
+    for (p = info; p != NULL; p = p->ai_next) {
+        struct sockaddr_in *addr = (struct sockaddr_in *)p->ai_addr;
+        printf("IPv4 Address: %s\n", inet_ntoa(addr->sin_addr));
+    }
+
+    freeaddrinfo(info);
+    printf("===========================\n\n");
+    return EXIT_SUCCESS;
+}
+
 
 // ----------------------- SERVER -----------------------
 
@@ -307,7 +342,10 @@ int httpServerServe(HttpServer *server) {
         close(serverSocket);
         return EXIT_FAILURE;
     }
+
+    printHostInfo();
     printf("Server listening on port %d...\n", server->port);
+
 
     // setNonBlocking(serverSocket);
 
