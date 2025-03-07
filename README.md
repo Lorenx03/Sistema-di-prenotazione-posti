@@ -20,15 +20,19 @@ Gli utenti possono accedere alla lista aggiornata dei film in programmazione, co
 
 - Titolo del film
 
-- Durata
-
 - Genere
 
-- Cast
+- Lingua
+
+- Durata
+
+- Attori
 
 - Trama
 
 - Orari di proiezione
+
+- Posti totali
 
 La programmazione viene gestita dinamicamente tramite file CSV, garantendo flessibilità e aggiornamenti in tempo reale.
 

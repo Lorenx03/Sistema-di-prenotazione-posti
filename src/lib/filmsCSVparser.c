@@ -145,7 +145,7 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset,
             "Film %d:\n"
-            "  Nome: %s\n"
+            "  Titolo: %s\n"
             "  Genere: %s\n"
             "  Lingua: %s\n"
             "  Durata: %d minuti\n"
