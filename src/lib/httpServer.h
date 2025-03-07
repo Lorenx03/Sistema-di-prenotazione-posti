@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/event.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
 #include <sys/sem.h>
@@ -24,6 +23,15 @@
 
 #include "userInput.h"
 #include "httpLib.h"
+
+// Include platform-specific system headers
+#ifdef __APPLE__
+#include <sys/event.h>  // For macOS/FreeBSD
+#elif defined(__linux__)
+#include <sys/epoll.h>  // For Linux
+#else
+#error "Unsupported operating system"
+#endif
 
 #define MAX_ROUTE_NAME 100
 #define MAX_REQUEST_SIZE 4096

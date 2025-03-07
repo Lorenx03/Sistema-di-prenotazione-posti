@@ -40,15 +40,15 @@ $(SERVER_TARGET): $(LIBOBJECTS) $(SERVER_OBJECT)
 	$(CC) $(CFLAGS) -o $(SERVER_TARGET) $^ $(LDFLAGS)
 
 # Rule to compile client.c to obj/client.o
-$(OBJDIR)/client.o: $(SRCDIR)/client.c
+$(OBJDIR)/client.o: $(SRCDIR)/client.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Rule to compile server.c to obj/server.o
-$(OBJDIR)/server.o: $(SRCDIR)/server.c
+$(OBJDIR)/server.o: $(SRCDIR)/server.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Rule to compile library source files to obj/*.o
-$(OBJDIR)/%.o: $(LIBDIR)/%.c
+$(OBJDIR)/%.o: $(LIBDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean rule to remove all object files and the executables

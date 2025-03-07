@@ -14,12 +14,12 @@ enum Pages {
 
 // Utils
 
-void inline printClearedResponse(char *response) {
+inline void printClearedResponse(char *response) {
     removeHttpHeaders(response);
     printf("\033[1J%s\n", response);
 }
 
-int inline countLinesOfResponse(char *response) {
+inline int countLinesOfResponse(char *response) {
     int lines = 0;
     for (size_t i = 0; i < strlen(response); i++) {
         if (response[i] == '\n') {
