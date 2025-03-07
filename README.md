@@ -34,8 +34,6 @@ Gli utenti possono accedere alla lista aggiornata dei film in programmazione, co
 
 - Posti totali
 
-La programmazione viene gestita dinamicamente tramite file CSV, garantendo flessibilità e aggiornamenti in tempo reale.
-
 ### 2. Prenotazione di Biglietti
 
 Il sistema consente agli utenti di:
@@ -74,7 +72,7 @@ Un server centrale gestisce:
 
 - Stato (prenotato o disponibile)
 
-Le richieste dei client, elaborandole in modo concorrente.
+- Le richieste dei client, elaborandole in modo concorrente.
 
 ### Client
 
@@ -137,6 +135,8 @@ Eseguire il server con il comando:
 
 - `<numThreads>`: Numero di thread da utilizzare per gestire le richieste.
 
+- Esempio: `./server -p 8090 -t 10`
+
 #### Client
 
 Eseguire il client con il comando:
@@ -146,6 +146,18 @@ Eseguire il client con il comando:
 - `<ip>`: Indirizzo IP del server a cui connettersi.
 
 - `<port>`: Porta su cui il server sta ascoltando.
+
+- Esempio: `./client -a 192.168.x.x -p 8090`
+
+Per individuare l'indirizzo IP su macOS esegui i seguenti comandi:
+
+- `ipconfig getifaddr en0`
+- `ipconfig getifaddr en1`
+
+Interfaccia `en0` per Wi-Fi e interfaccia `en1` per Ethernet.
+Su Linux, il comando ip è lo strumento preferito per configurare e visualizzare la rete. Per trovare l'indirizzo IP, esegui:
+- `ip addr show`
+Cerca l'interfaccia attiva `wlan0` per Wi-Fi e `eth0` per Ethernet.
 
 ## Esecuzione simultanea di client e server
 
