@@ -25,14 +25,29 @@ Lo studente è tenuto a realizzare sia il client che il server. Il server deve e
 
 ### Come compilare ed eseguire i programmi
 
-Prima di compilare il progetto, assicurarsi che nel sistema siano installati "make" e un compilatore C (come clang o gcc). Per compilare, eseguire il makefile presente nella root del progetto con il comando:
+Compilazione ed Esecuzione
+
+Prerequisiti
+
+Assicurarsi che nel sistema siano installati:
 
 make
 
+Un compilatore C (come clang o gcc)
 
-La compilazione produrrà due eseguibili: "client" e "server".
+Compilazione
 
-Gli eseguibili possono essere eseguiti con i seguenti comandi:
+Per compilare il progetto, eseguire il comando:
+
+make
+
+Questo produrrà due eseguibili nella root del progetto:
+
+client
+
+server
+
+Esecuzione
 
 - Per il client:
 
