@@ -288,17 +288,24 @@ int main(int argc, char *argv[]) {
 
     // Parse command line arguments
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+        if (strcmp(argv[i], "-h") == 0) {
+            printf("Usage: %s [-p port] [-t threads]\n\n", argv[0]);
+            printf("Options:\n");
+            printf("  -h\t\tShow this help message\n");
+            printf("  -p <port>\tSpecify the port for the server (default: 8090)\n"); 
+            printf("  -t <threads>\tSpecify number of worker threads (default: 10)\n");
+            return 0;
+        } else if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
             port = atoi(argv[i + 1]);
             if (port <= 0 || port > 65535) {
-                fprintf(stderr, "Porta non valida. Deve essere tra 1 e 65535\n");
+                fprintf(stderr, "Invalid port number. Must be between 1 and 65535\n");
                 return 1;
             }
             i++;
         } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
             numThreads = atoi(argv[i + 1]);
             if (numThreads <= 0) {
-                fprintf(stderr, "Numero di thread non valido. Deve essere maggiore di 0\n");
+                fprintf(stderr, "Invalid number of threads. Must be greater than 0\n");
                 return 1;
             }
             i++;

@@ -424,17 +424,24 @@ int main(int argc, char *argv[]) {
 
     // Parse command line arguments
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+        if (strcmp(argv[i], "-h") == 0) {
+            printf("Usage: %s [-a address] [-p port]\n\n", argv[0]);
+            printf("Options:\n");
+            printf("  -h\t\tShow this help message\n");
+            printf("  -a <address>\tSpecify server IP address (default: 127.0.0.1)\n");
+            printf("  -p <port>\tSpecify server port (default: 8090)\n");
+            return 0;
+        } else if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
             port = atoi(argv[i + 1]);
             if (port <= 0 || port > 65535) {
-                fprintf(stderr, "Porta non valida. Deve essere tra 1 e 65535\n");
+                fprintf(stderr, "Invalid port number. Must be between 1 and 65535\n");
                 return 1;
             }
             i++;
         } else if (strcmp(argv[i], "-a") == 0 && i + 1 < argc) {
             struct sockaddr_in sa;
             if (inet_pton(AF_INET, argv[i + 1], &(sa.sin_addr)) <= 0) {
-                fprintf(stderr, "Indirizzo IP non valido\n");
+                fprintf(stderr, "Invalid IP address\n"); 
                 return 1;
             }
             strncpy(ip_addr, argv[i + 1], sizeof(ip_addr) - 1);
