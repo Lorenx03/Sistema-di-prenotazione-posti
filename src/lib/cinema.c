@@ -129,7 +129,7 @@ int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCode
     // Now that we locked the seats, we can book them
     for (int i = 0; i < numSeats; i++) {
         // Check if seat coordinates are valid
-        if (seats[i] == NULL || 
+        if ( 
             seats[i][0] < 0 || 
             seats[i][0] >= hall->rows ||
             seats[i][1] < 0 || seats[i][1] >= hall->columns
@@ -147,7 +147,7 @@ int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCode
 
         temp[i] = hall->seats[seats[i][0]][seats[i][1]].state;
         hall->seats[seats[i][0]][seats[i][1]].state = BOOKED;
-        strncpy(hall->seats[seats[i][0]][seats[i][1]].booking_code, bookingCodes[i], sizeof(hall->seats[seats[i][0]][seats[i][1]].booking_code));
+        snprintf(hall->seats[seats[i][0]][seats[i][1]].booking_code, sizeof(hall->seats[seats[i][0]][seats[i][1]].booking_code), "%s", bookingCodes[i]);
 
         pthread_mutex_unlock(&hall->seats[seats[i][0]][seats[i][1]].lock);
     }
