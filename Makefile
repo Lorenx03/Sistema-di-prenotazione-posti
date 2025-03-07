@@ -1,38 +1,59 @@
 # Define the compiler
 CC = gcc
 
-# Define the flags
-CFLAGS = -Wall -Wextra -I./src/lib
+# Define the compilation flags
+CFLAGS = -Wall -Wextra -I./src/lib -O2
 
-# Define the source directories
+# Define the linking flags
+LDFLAGS = -lpthread
+
+# Define directories
 SRCDIR = ./src
 LIBDIR = $(SRCDIR)/lib
+OBJDIR = ./obj
 
-# Define the output executable
-TARGET = program
-
-# Find all .c files in the lib directory and main.c
+# Find all .c files in the lib directory
 LIBSOURCES = $(wildcard $(LIBDIR)/*.c)
-MAINSOURCE = $(SRCDIR)/main.c
 
-# Generate object file names for libraries
-LIBOBJECTS = $(LIBSOURCES:.c=.o)
+# Generate object file names in the obj directory
+LIBOBJECTS = $(patsubst $(LIBDIR)/%.c, $(OBJDIR)/%.o, $(LIBSOURCES))
+CLIENT_OBJECT = $(OBJDIR)/client.o
+SERVER_OBJECT = $(OBJDIR)/server.o
 
-# The first rule is the default target, i.e., the final executable
-$(TARGET): $(LIBOBJECTS) $(SRCDIR)/main.o
-	$(CC) $(CFLAGS) -o $(TARGET) $^
+# Define the output executables
+CLIENT_TARGET = client
+SERVER_TARGET = server
 
-# Rule to build main.o
-$(SRCDIR)/main.o: $(MAINSOURCE)
+# Default target (build both client and server)
+all: $(OBJDIR) $(CLIENT_TARGET) $(SERVER_TARGET)
+
+# Rule to create the object directory
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+# Rule to build the client executable
+$(CLIENT_TARGET): $(LIBOBJECTS) $(CLIENT_OBJECT)
+	$(CC) $(CFLAGS) -o $(CLIENT_TARGET) $^ $(LDFLAGS)
+
+# Rule to build the server executable
+$(SERVER_TARGET): $(LIBOBJECTS) $(SERVER_OBJECT)
+	$(CC) $(CFLAGS) -o $(SERVER_TARGET) $^ $(LDFLAGS)
+
+# Rule to compile client.c to obj/client.o
+$(OBJDIR)/client.o: $(SRCDIR)/client.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Rule to build each lib .o file
-$(LIBDIR)/%.o: $(LIBDIR)/%.c
+# Rule to compile server.c to obj/server.o
+$(OBJDIR)/server.o: $(SRCDIR)/server.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean rule to remove all object files and the executable
+# Rule to compile library source files to obj/*.o
+$(OBJDIR)/%.o: $(LIBDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean rule to remove all object files and the executables
 clean:
-	rm -f $(LIBDIR)/*.o $(SRCDIR)/main.o $(TARGET)
+	rm -rf $(OBJDIR) $(CLIENT_TARGET) $(SERVER_TARGET)
 
 # Phony targets to avoid conflicts with files named 'clean'
-.PHONY: clean
+.PHONY: clean all

@@ -38,3 +38,9 @@ void read_str(char *str){
 		exit(EXIT_FAILURE);
 	}
 }
+
+
+void waitForKey() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
