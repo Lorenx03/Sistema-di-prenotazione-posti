@@ -115,9 +115,7 @@ Utilizzare la vostra `shell` preferita e spostarsi nella directory in cui è sta
 
 ## Compilare il programma
 
-Per compilare ed eseguire il programma, digitare il comando:
-
-`make`
+Per compilare ed eseguire il programma, digitare il comando: `make`
 
 Dopo aver eseguito il comando, il `Makefile` creerà due oggetti eseguibili:
 
@@ -127,36 +125,35 @@ Dopo aver eseguito il comando, il `Makefile` creerà due oggetti eseguibili:
 
 ### Avviare i programmi
 
-Eseguire il server con il comando:
-
-`./server -p <port> -t <numThreads>`
+Eseguire il server con il comando: `./server -p <port> -t <numThreads>`
 
 - `<port>`: Porta su cui il server deve ascoltare.
 
 - `<numThreads>`: Numero di thread da utilizzare per gestire le richieste.
 
-- Esempio: `./server -p 8090 -t 10`
+Esempio: `./server -p 8090 -t 10`
 
 #### Client
 
-Eseguire il client con il comando:
-
-`./client -a <ip> -p <port>`
+Eseguire il client con il comando: `./client -a <ip> -p <port>`
 
 - `<ip>`: Indirizzo IP del server a cui connettersi.
 
 - `<port>`: Porta su cui il server sta ascoltando.
 
-- Esempio: `./client -a 192.168.x.x -p 8090`
+Esempio: `./client -a 192.168.x.x -p 8090`
 
 Per individuare l'indirizzo IP su macOS esegui i seguenti comandi:
 
 - `ipconfig getifaddr en0`
+
 - `ipconfig getifaddr en1`
 
 Interfaccia `en0` per Wi-Fi e interfaccia `en1` per Ethernet.
 Su Linux, il comando ip è lo strumento preferito per configurare e visualizzare la rete. Per trovare l'indirizzo IP, esegui:
+
 - `ip addr show`
+
 Cerca l'interfaccia attiva `wlan0` per Wi-Fi e `eth0` per Ethernet.
 
 ## Esecuzione simultanea di client e server
@@ -185,5 +182,3 @@ Con questa procedura l'applicazione sarà pronta per l'uso.
 ##  Supporto
 
 Per domande o problemi si consiglia di contattare il responsabile del progetto.
-
-
