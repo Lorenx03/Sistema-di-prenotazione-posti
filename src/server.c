@@ -367,7 +367,12 @@ int main(int argc, char *argv[]) {
     initFilmsList("films.csv", &cinemaFilms);
     loadBookingsFromFile(&cinemaFilms, "bookings.csv");
 
-    printf("Starting server on port %d with %d threads\n", port, numThreads);
+    printf("\e[1;32m========================================\n");
+    printf("             Cinema Server\n");
+    printf("========================================\e[0m\n");
+
+    printf("Loaded %d films\n", cinemaFilms.count);
+    printf("Starting server on port %d with %d threads.\n", port, numThreads);
 
     if (httpServerServe(&server)) {
         fprintf(stderr, "Error starting server\n");

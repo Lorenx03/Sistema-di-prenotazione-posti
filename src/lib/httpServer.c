@@ -265,7 +265,7 @@ int printHostInfo() {
         return EXIT_FAILURE;
     }
 
-    printf("\n========= HOST INFO =======\n");
+    printf("\n========= HOST INFO ========\n");
     printf("Hostname: %s\n", hostname);
 
     // Resolve IP address
@@ -285,7 +285,7 @@ int printHostInfo() {
     }
 
     freeaddrinfo(info);
-    printf("===========================\n\n");
+    printf("============================\n\n");
     return EXIT_SUCCESS;
 }
 
