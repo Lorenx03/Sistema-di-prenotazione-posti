@@ -125,6 +125,8 @@ Dopo aver eseguito il comando, il `Makefile` creerà due oggetti eseguibili:
 
 ### Avviare i programmi
 
+#### Server
+
 Eseguire il server con il comando: `./server -p <port> -t <numThreads>`
 
 - `<port>`: Porta su cui il server deve ascoltare.
@@ -171,6 +173,7 @@ Il file `rundev.sh` è uno script Bash che automatizza la compilazione e l'esecu
 
 Per installare `tmux` su Linux, puoi installare tmux utilizzando il gestore di pacchetti della tua distribuzione:
 - Ubuntu/Debian: `sudo apt install tmux`
+  
 - Arch Linux: `sudo pacman -S tmux`
  
 ### Su macOS
