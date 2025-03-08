@@ -69,7 +69,7 @@ void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *forma
 void generateRandomString(char *str, size_t length) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     size_t charset_size = sizeof(charset) - 1;
-    
+
     for (size_t i = 0; i < length; i++) {
         str[i] = charset[rand() % charset_size];
     }
@@ -81,7 +81,6 @@ void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) 
     char temp[1024];
     strncpy(temp, str, sizeof(temp) - 1);
     temp[sizeof(temp) - 1] = '\0';
-
 
     char *saveptr;
     char *current_token;
@@ -96,13 +95,14 @@ void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) 
     memset(token, 0, token_size);
 
     if (current_token != NULL) {
-        if(strlen(current_token) < token_size){
-            strncpy(token, current_token, token_size);
-        }else{
-            fprintf(stderr, "getNToken: token too long\n");
+        if (strlen(current_token) < token_size) {
+            strncpy(token, current_token, token_size - 1);
+            token[token_size - 1] = '\0'; // Aggiungi il terminatore nullo
+        } else {
+            fprintf(stderr, "getNthToken: token too long\n");
         }
     } else {
-        fprintf(stderr, "getNToken: token not found\n");
+        fprintf(stderr, "getNthToken: token not found\n");
     }
 }
 
