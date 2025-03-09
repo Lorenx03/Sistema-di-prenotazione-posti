@@ -59,7 +59,7 @@ void create_halls_for_showtimes(Film *film);
 void generateHallMapResponse(Hall *hall, char *buffer, size_t remaining_size);
 // int bookSeat(Hall *hall, char *seat, char *bookingCode);
 int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCodes[numSeats][18]);
-void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size);
+void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, int row, int col, size_t *remaining_size);
 // int unBookPrenotation(Hall *hall, char *prenotationCode);
 int saveBookingsToFile(Films *filmsStruct, const char *filename);
 int loadBookingsFromFile(Films *filmsStruct, const char *filename);

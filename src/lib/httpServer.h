@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/event.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
 #include <sys/sem.h>
@@ -58,7 +57,7 @@ typedef struct httpRoute {
 typedef struct parsedHttpRequest {
     HttpMethod method;
     char path[MAX_ROUTE_NAME];
-    char *body;
+    char body[MAX_REQUEST_SIZE];
 } ParsedHttpRequest;
 
 typedef struct cronJob {

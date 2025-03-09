@@ -147,7 +147,7 @@ int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCode
 
         temp[i] = hall->seats[seats[i][0]][seats[i][1]].state;
         hall->seats[seats[i][0]][seats[i][1]].state = BOOKED;
-        strncpy(hall->seats[seats[i][0]][seats[i][1]].booking_code, bookingCodes[i], sizeof(hall->seats[seats[i][0]][seats[i][1]].booking_code));
+        strncpy(hall->seats[seats[i][0]][seats[i][1]].booking_code, bookingCodes[i], sizeof(hall->seats[seats[i][0]][seats[i][1]].booking_code)-1);
 
         pthread_mutex_unlock(&hall->seats[seats[i][0]][seats[i][1]].lock);
     }
@@ -195,7 +195,7 @@ int loadBookingsFromFile(Films *filmsStruct, const char *filename){
     char line[1024] = {0};
     char *token;
     char *saveptr;
-    int film_id, showtime_id;
+    int film_id = 0, showtime_id = 0;
     int seat[1][2];
     char booking_code[1][18] = {0};
 
@@ -292,11 +292,21 @@ int loadBookingsFromFile(Films *filmsStruct, const char *filename){
 }
 
 
-void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, char *seat, size_t *remaining_size){
+void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *filmShowtime, int row, int col, size_t *remaining_size){
+    if (buff == NULL || bookingCode == NULL || filmTitle == NULL || filmShowtime == NULL || remaining_size == NULL){
+        fprintf(stderr, "printTicketToBuff: NULL pointer\n");
+        return;
+    }
+    
+    if(row < 'A' || row > 'Z' || col < 1 || col > 999){
+        fprintf(stderr, "printTicketToBuff: Invalid seat\n");
+        return;
+    }
+
     appendToBuffer(buff, remaining_size, "============== BIGLIETTO =============\n");
     appendToBuffer(buff, remaining_size, "Codice prenotazione: %s\n", bookingCode);
     appendToBuffer(buff, remaining_size, "Film: %s\n", filmTitle);
     appendToBuffer(buff, remaining_size, "Orario: %s\n", filmShowtime);
-    appendToBuffer(buff, remaining_size, "Posto: %s\n", seat);
+    appendToBuffer(buff, remaining_size, "Posto: %c%d\n", row, col);
     appendToBuffer(buff, remaining_size, "======================================\n\n\n");
 }

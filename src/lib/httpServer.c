@@ -87,7 +87,7 @@ void errorResponse(char *response, int errorCode) {
 void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest) {
     // Initialize parsed request
     parsedRequest->method = UNKNOWN;
-    parsedRequest->body = NULL;
+    memset(parsedRequest->body, 0, MAX_REQUEST_SIZE);
 
     // Parse HTTP method
     if (strncmp(request, "GET", 3) == 0) {
@@ -125,7 +125,12 @@ void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest) {
     char *body_start = strstr(request, "\r\n\r\n");
     if (body_start != NULL) {
         body_start += 4; // Skip \r\n\r\n
-        parsedRequest->body = strdup(body_start);
+        // parsedRequest->body = strdup(body_start);
+
+        if (strlen(body_start) < MAX_REQUEST_SIZE) {
+            strncpy(parsedRequest->body, body_start, MAX_REQUEST_SIZE - 1);
+            parsedRequest->body[MAX_REQUEST_SIZE - 1] = '\0';
+        }
     }
 
     // printf("Parsed request: %s %s\n", parsedRequest->path, parsedRequest->body);

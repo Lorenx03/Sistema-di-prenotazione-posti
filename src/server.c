@@ -211,9 +211,7 @@ void POSTBookSeat(char *request, char *response){
 
             if (bookSeats(&film->halls[hall_index - 1], numSeats, seatsToBook, bookingCodes) == 0){
                 for (int i = 0; i < numSeats; i++){
-                    char seatTicket[5] = {0};
-                    snprintf(seatTicket, sizeof(seatTicket), "%c%d", seatsToBook[i][0] + 'A', seatsToBook[i][1] + 1);
-                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, seatTicket, &buffSize);
+                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, seatsToBook[i][0] + 'A',seatsToBook[i][1] + 1, &buffSize);
                 }
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
             }else{

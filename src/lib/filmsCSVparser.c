@@ -83,7 +83,7 @@ int count_showtimes(Film *film) {
     int count = 0;
     char showtimes[1024] = {0};
     
-    strncpy(showtimes, film->showtimes, sizeof(showtimes));  
+    strncpy(showtimes, film->showtimes, sizeof(showtimes)-1);  
     char *token = strtok(showtimes, ",");
 
     while (token) {
@@ -164,7 +164,7 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
             calculate_total_seats(&films[i])
         );
 
-        if (written < 0 || written >= buffer_size - offset) {
+        if (written == 0 || written >= buffer_size - offset) {
             fprintf(stderr, "Error writing to buffer\n");
             break;
         }
@@ -178,7 +178,7 @@ void print_films_name(char *buffer, size_t buffer_size, Film *films, int film_co
     size_t offset = strlen(buffer);
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset, "Film %d: %s\n", i + 1, films[i].name);
-        if (written < 0 || written >= buffer_size - offset) {
+        if (written == 0 || written >= buffer_size - offset) {
             fprintf(stderr, "Error writing to buffer\n");
             break;
         }

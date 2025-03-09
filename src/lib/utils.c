@@ -78,8 +78,8 @@ void generateRandomString(char *str, size_t length) {
 
 
 void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) {
-    char temp[1024];
-    strncpy(temp, str, sizeof(temp));
+    char temp[1024] = {0};
+    strncpy(temp, str, sizeof(temp)-1);
 
     char *saveptr;
     char *current_token;

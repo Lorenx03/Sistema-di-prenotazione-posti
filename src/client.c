@@ -14,12 +14,12 @@ enum Pages {
 
 // Utils
 
-void inline printClearedResponse(char *response) {
+void printClearedResponse(char *response) {
     removeHttpHeaders(response);
     printf("\033[1J%s\n", response);
 }
 
-int inline countLinesOfResponse(char *response) {
+int countLinesOfResponse(char *response) {
     int lines = 0;
     for (size_t i = 0; i < strlen(response); i++) {
         if (response[i] == '\n') {
@@ -37,7 +37,7 @@ void parseSeat(char *seat, char *row, int *column) {
 
     if (strlen(seat) < 2 || strlen(seat) > 3) {
         fprintf(stderr, "parseSeat: Invalid seat format\n");
-        strncpy(seat, "000", 1);
+        seat[0] = '\0';
         *row = '0';
         *column = 0;
         return;
@@ -103,7 +103,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                             ptr += 5; 
                             while (*ptr == ' ') ptr++;
                             ptr[strcspn(ptr,"\n")] = 0;
-                            strncpy(filmTitle, ptr, sizeof(filmTitle));
+                            strncpy(filmTitle, ptr, sizeof(filmTitle)-1);
                         }
                     }
                     currentPage = 1;
@@ -133,7 +133,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     hallColums = safeStrToInt(token);
                     token = strtok_r(NULL, ".", &saveptr);
                     if (token != NULL) {
-                        strncpy(hallMap, token, sizeof(hallMap));
+                        strncpy(hallMap, token, sizeof(hallMap)-1);
                         generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
                     }
                 }
@@ -216,8 +216,12 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                 
                 hallMap[(seatChoiceRow - 'A') * hallColums + seatChoiceColumn - 1] = '3'; //SELECTED
                 generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
-                strncat(requestBody, ".", 1);
-                strncat(requestBody, seatChoice, strlen(seatChoice));
+
+                size_t remaining = sizeof(requestBody) - strlen(requestBody) - 1;
+                strncat(requestBody, ".", remaining);
+                remaining = sizeof(requestBody) - strlen(requestBody) - 1;
+                strncat(requestBody, seatChoice, remaining);
+
                 printf("Posto %d: %s\n", i, seatChoice);
             }
 
