@@ -198,7 +198,7 @@ void POSTBookSeat(char *request, char *response){
                 seatsToBook[numSeats][1] = column;
 
                 generateRandomString(reservationIdentifier, sizeof(reservationIdentifier)-1);
-                snprintf(bookingCodes[numSeats], sizeof(bookingCodes[numSeats]), "%s-%s", bookingCode, reservationIdentifier);
+                snprintf(bookingCodes[numSeats], sizeof(bookingCodes[numSeats]), "%s-%s", prenotationCode, reservationIdentifier);
 
                 token = strtok_r(NULL, ".", &saveptr);
                 numSeats++;
@@ -211,9 +211,7 @@ void POSTBookSeat(char *request, char *response){
 
             if (bookSeats(&film->halls[hall_index - 1], numSeats, seatsToBook, bookingCodes) == 0){
                 for (int i = 0; i < numSeats; i++){
-                    char seatTicket[20] = {0};
-                    snprintf(seatTicket, sizeof(seatTicket), "%c%d", seatsToBook[i][0] + 'A', seatsToBook[i][1] + 1);
-                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, seatTicket, &buffSize);
+                    printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, seatsToBook[i][0] + 'A',seatsToBook[i][1] + 1, &buffSize);
                 }
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
             }else{

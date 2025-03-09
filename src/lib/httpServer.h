@@ -24,15 +24,6 @@
 #include "userInput.h"
 #include "httpLib.h"
 
-// Include platform-specific system headers
-#ifdef __APPLE__
-#include <sys/event.h>  // For macOS/FreeBSD
-#elif defined(__linux__)
-#include <sys/epoll.h>  // For Linux
-#else
-#error "Unsupported operating system"
-#endif
-
 #define MAX_ROUTE_NAME 100
 #define MAX_REQUEST_SIZE 4096
 #define MAX_RESPONSE_SIZE 4096
@@ -66,7 +57,7 @@ typedef struct httpRoute {
 typedef struct parsedHttpRequest {
     HttpMethod method;
     char path[MAX_ROUTE_NAME];
-    char *body;
+    char body[MAX_REQUEST_SIZE];
 } ParsedHttpRequest;
 
 typedef struct cronJob {

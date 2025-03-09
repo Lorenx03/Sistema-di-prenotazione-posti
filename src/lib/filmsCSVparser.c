@@ -1,15 +1,5 @@
-// Include local headers
 #include "cinema.h"
 #include "filmsCSVparser.h"
-
-// Include platform-specific system headers
-#ifdef __APPLE__
-#include <sys/event.h>  // For macOS/FreeBSD
-#elif defined(__linux__)
-#include <sys/epoll.h>  // For Linux
-#else
-#error "Unsupported operating system"
-#endif
 
 // Function to remove leading and trailing whitespace
 char* trim_whitespace(char* str) {
@@ -93,7 +83,7 @@ int count_showtimes(Film *film) {
     int count = 0;
     char showtimes[1024] = {0};
     
-    snprintf(showtimes, sizeof(showtimes), "%s", film->showtimes);
+    strncpy(showtimes, film->showtimes, sizeof(showtimes)-1);  
     char *token = strtok(showtimes, ",");
 
     while (token) {
@@ -155,7 +145,7 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset,
             "Film %d:\n"
-            "  Titolo: %s\n"
+            "  Nome: %s\n"
             "  Genere: %s\n"
             "  Lingua: %s\n"
             "  Durata: %d minuti\n"
@@ -174,7 +164,7 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
             calculate_total_seats(&films[i])
         );
 
-        if (written >= buffer_size - offset) {
+        if (written == 0 || written >= buffer_size - offset) {
             fprintf(stderr, "Error writing to buffer\n");
             break;
         }
@@ -188,7 +178,7 @@ void print_films_name(char *buffer, size_t buffer_size, Film *films, int film_co
     size_t offset = strlen(buffer);
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset, "Film %d: %s\n", i + 1, films[i].name);
-        if (written >= buffer_size - offset) {
+        if (written == 0 || written >= buffer_size - offset) {
             fprintf(stderr, "Error writing to buffer\n");
             break;
         }

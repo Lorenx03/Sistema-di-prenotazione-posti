@@ -54,22 +54,40 @@ void getLine(char* str, int n, char* buffer, size_t buffer_size) {
 }
 
 
+// void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
+//     va_list args;
+//     va_start(args, format);
+//     int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
+//     va_end(args);
+
+//     if (written > 0) {
+//         *buffer_ptr += written;
+//         *remaining_size -= written;
+//     }
+// }
+
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
     va_list args;
     va_start(args, format);
+    
     int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
     va_end(args);
-
-    if (written > 0) {
+    
+    if (written > 0 && (size_t)written <= *remaining_size) {
         *buffer_ptr += written;
         *remaining_size -= written;
+    } else if (written > 0 && *remaining_size > 0) {
+        // Partial write occurred - advance only by what actually fit
+        *buffer_ptr += (*remaining_size - 1); // -1 for the null terminator
+        *remaining_size = 0;
     }
+    // If written <= 0, don't modify pointers (error occurred)
 }
 
 void generateRandomString(char *str, size_t length) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     size_t charset_size = sizeof(charset) - 1;
-
+    
     for (size_t i = 0; i < length; i++) {
         str[i] = charset[rand() % charset_size];
     }
@@ -78,9 +96,8 @@ void generateRandomString(char *str, size_t length) {
 
 
 void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) {
-    char temp[1024];
-    strncpy(temp, str, sizeof(temp) - 1);
-    temp[sizeof(temp) - 1] = '\0';
+    char temp[1024] = {0};
+    strncpy(temp, str, sizeof(temp)-1);
 
     char *saveptr;
     char *current_token;
@@ -95,14 +112,13 @@ void getNthToken(char *str, char *delim, int n, char *token, size_t token_size) 
     memset(token, 0, token_size);
 
     if (current_token != NULL) {
-        if (strlen(current_token) < token_size) {
-            strncpy(token, current_token, token_size - 1);
-            token[token_size - 1] = '\0'; // Aggiungi il terminatore nullo
-        } else {
-            fprintf(stderr, "getNthToken: token too long\n");
+        if(strlen(current_token) < token_size){
+            strncpy(token, current_token, token_size);
+        }else{
+            fprintf(stderr, "getNToken: token too long\n");
         }
     } else {
-        fprintf(stderr, "getNthToken: token not found\n");
+        fprintf(stderr, "getNToken: token not found\n");
     }
 }
 
