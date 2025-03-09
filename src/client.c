@@ -37,8 +37,7 @@ void parseSeat(char *seat, char *row, int *column) {
 
     if (strlen(seat) < 2 || strlen(seat) > 3) {
         fprintf(stderr, "parseSeat: Invalid seat format\n");
-        strncpy(seat, "000", sizeof(seat) - 1);
-        seat[sizeof(seat) - 1] = '\0';
+        strncpy(seat, "000", 1);
         *row = '0';
         *column = 0;
         return;
@@ -104,8 +103,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                             ptr += 5; 
                             while (*ptr == ' ') ptr++;
                             ptr[strcspn(ptr,"\n")] = 0;
-                            strncpy(filmTitle, ptr, sizeof(filmTitle) - 1);
-                            filmTitle[sizeof(filmTitle) - 1] = '\0';
+                            strncpy(filmTitle, ptr, sizeof(filmTitle));
                         }
                     }
                     currentPage = 1;
@@ -135,8 +133,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     hallColums = safeStrToInt(token);
                     token = strtok_r(NULL, ".", &saveptr);
                     if (token != NULL) {
-                        strncpy(hallMap, token, sizeof(hallMap) - 1);
-                        hallMap[sizeof(hallMap) - 1] = '\0';
+                        strncpy(hallMap, token, sizeof(hallMap));
                         generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
                     }
                 }
@@ -220,7 +217,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                 hallMap[(seatChoiceRow - 'A') * hallColums + seatChoiceColumn - 1] = '3'; //SELECTED
                 generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
                 strncat(requestBody, ".", 1);
-                strncat(requestBody, seatChoice, sizeof(requestBody) - strlen(requestBody) - 1);
+                strncat(requestBody, seatChoice, strlen(seatChoice));
                 printf("Posto %d: %s\n", i, seatChoice);
             }
 
