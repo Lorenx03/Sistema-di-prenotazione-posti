@@ -68,7 +68,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
 
     char hallMap[2048] = {0}; // Map sent by the server
     char hallMapBuff[8192] = {0}; // Buffer to show to the user
-    char hallMapMostWideLine[512] = {0};
+    int hallMapWidth = 0;
 
     int hallColums = -1;
     int hallRows = -1;
@@ -134,7 +134,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     token = strtok_r(NULL, ".", &saveptr);
                     if (token != NULL) {
                         strncpy(hallMap, token, sizeof(hallMap)-1);
-                        generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
+                        hallMapWidth = generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
                     }
                 }
             }
@@ -144,12 +144,10 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                 return;
             }
             
-            getLine(hallMapBuff, 2, hallMapMostWideLine, sizeof(hallMapMostWideLine));
-
             printf("\033[1J\n");
-            centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
+            centerMapText(hallMapWidth+14, "%s - %s", filmTitle, filmShowtime);
             printf("\n\n");
-            centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
+            centerMapText(hallMapWidth, "Sala %d", film_id);
             printf("\n\n");
             printf("%s\n", hallMapBuff);
             printf("\nLegenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\n");
@@ -180,9 +178,9 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
 
             for (int i = 1; i <= numberOfSeats; i++){
                 printf("\033[1J\n");
-                centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
+                centerMapText(hallMapWidth+14, "%s - %s", filmTitle, filmShowtime);
                 printf("\n\n");
-                centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
+                centerMapText(hallMapWidth, "Sala %d", film_id);
                 printf("\n\n");
                 printf("%s\n", hallMapBuff);
                 // Legend
@@ -226,9 +224,9 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
             }
 
             printf("\033[1J\n");
-            centerMapText(strlen(hallMapMostWideLine)+13, "%s - %s", filmTitle, filmShowtime);
+            centerMapText(hallMapWidth+14, "%s - %s", filmTitle, filmShowtime);
             printf("\n\n");
-            centerMapText(strlen(hallMapMostWideLine), "Sala %d", film_id);
+            centerMapText(hallMapWidth, "Sala %d", film_id);
             printf("\n\n");
             printf("%s\n", hallMapBuff);
             printf("Legenda: \n\033[0;32m[A1]\033[0m Disponibile \n\033[0;31m[A1]\033[0m Prenotato \n\033[0;34m[A1]\033[0m Disabili\n\033[0;33m{A1}\033[0m Selezionato\n\n");

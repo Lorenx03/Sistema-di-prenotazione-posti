@@ -28,21 +28,31 @@ void drawSeatNumbers(char **buffer, size_t *remaining_size, const int columns) {
     appendToBuffer(buffer, remaining_size, "\n");
 }
 
-void drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns) {
+int drawSeparatorLine(char **buffer, size_t *remaining_size, const int columns) {
+    int width = 4;
     appendToBuffer(buffer, remaining_size, "  --");
     for (int j = 1; j <= columns; j++) {
-        if (j<9)
+        if (j<9){
             appendToBuffer(buffer, remaining_size, "-----");
-        else
+            width += 5;
+        }else{
             appendToBuffer(buffer, remaining_size, "------");
+            width += 6;
+        }
     }
     appendToBuffer(buffer, remaining_size, "\n");
+    return width;
 }
 
-void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, int columns){
+int generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, int columns){
+    if (map == NULL || buffer == NULL || rows <= 0 || columns <= 0) {
+        fprintf(stderr, "generateHallMap: Invalid arguments\n");
+        return -1;
+    }
+
     // CINEMA
     drawSeatNumbers(&buffer, &remaining_size, columns);
-    drawSeparatorLine(&buffer, &remaining_size, columns);
+    int width = drawSeparatorLine(&buffer, &remaining_size, columns);;
 
     // Seats
     for (int i = 0; i < rows; i++) {
@@ -84,4 +94,6 @@ void generateHallMap(char *map, char *buffer, size_t remaining_size, int rows, i
 
     drawSeparatorLine(&buffer, &remaining_size, columns);
     drawSeatNumbers(&buffer, &remaining_size, columns);
+
+    return width;
 }
