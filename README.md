@@ -119,9 +119,9 @@ Per compilare ed eseguire il programma, digitare il comando: `make`
 
 Dopo aver eseguito il comando, il `Makefile` creerà due oggetti eseguibili:
 
-- `SERVER`: rappresenta la macchina server
+- `server`: rappresenta la macchina server
 
-- `CLIENT`: rappresenta la macchina client
+- `client`: rappresenta la macchina client
 
 ### Avviare i programmi
 
