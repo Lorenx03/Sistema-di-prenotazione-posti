@@ -135,7 +135,8 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
                     hallColums = safeStrToInt(token);
                     token = strtok_r(NULL, ".", &saveptr);
                     if (token != NULL) {
-                        strncpy(hallMap, token, sizeof(hallMap));
+                        strncpy(hallMap, token, sizeof(hallMap) - 1);
+                        hallMap[sizeof(hallMap) - 1] = '\0';
                         generateHallMap(hallMap, hallMapBuff, sizeof(hallMapBuff), hallRows, hallColums);
                     }
                 }

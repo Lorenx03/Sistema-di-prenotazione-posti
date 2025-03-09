@@ -195,7 +195,7 @@ int loadBookingsFromFile(Films *filmsStruct, const char *filename){
     char line[1024] = {0};
     char *token;
     char *saveptr;
-    int film_id, showtime_id;
+    int film_id = -1, showtime_id = -1;
     int seat[1][2];
     char booking_code[1][18] = {0};
 
