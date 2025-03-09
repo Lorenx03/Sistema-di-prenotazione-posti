@@ -54,16 +54,34 @@ void getLine(char* str, int n, char* buffer, size_t buffer_size) {
 }
 
 
+// void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
+//     va_list args;
+//     va_start(args, format);
+//     int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
+//     va_end(args);
+
+//     if (written > 0) {
+//         *buffer_ptr += written;
+//         *remaining_size -= written;
+//     }
+// }
+
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
     va_list args;
     va_start(args, format);
+    
     int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
     va_end(args);
-
-    if (written > 0) {
+    
+    if (written > 0 && (size_t)written <= *remaining_size) {
         *buffer_ptr += written;
         *remaining_size -= written;
+    } else if (written > 0 && *remaining_size > 0) {
+        // Partial write occurred - advance only by what actually fit
+        *buffer_ptr += (*remaining_size - 1); // -1 for the null terminator
+        *remaining_size = 0;
     }
+    // If written <= 0, don't modify pointers (error occurred)
 }
 
 void generateRandomString(char *str, size_t length) {

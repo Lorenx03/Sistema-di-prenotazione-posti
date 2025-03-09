@@ -66,8 +66,9 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
     char seatChoiceRow = 0;
     int seatChoiceColumn = 0;
 
-    char hallMap[2048] = {0};
-    char hallMapBuff[4096] = {0};
+    char hallMap[2048] = {0}; // Map sent by the server
+    // TODO: Might do with heap
+    char hallMapBuff[8192] = {0}; // Buffer to show to the user
     char hallMapMostWideLine[512] = {0};
 
     int hallColums = -1;
