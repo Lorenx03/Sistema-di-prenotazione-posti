@@ -217,13 +217,14 @@ void *workerRoutine(void *params) {
     struct sockaddr_in clientAddress;
     socklen_t clientLength;
 
-    while (running) {
+    while (running == 1) {
         // Accept
         int connSocketFd = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
         if (connSocketFd < 0 && running == 1) {
             fprintf(stderr, "Accept failed: %s\n", strerror(errno));
             continue;
-        }else if (running == 0){
+        }else if (running <= 0){
+            // "Error" caused by the server stopping
             break;
         }
 
@@ -240,7 +241,7 @@ void *workerRoutine(void *params) {
 // ----------------------- CRON JOBS -----------------------
 
 void runJob(CronJob *job) {
-    while (running) {
+    while (running == 1) {
         job->job();
         sleep(job->interval);
     }
@@ -301,7 +302,12 @@ int printHostInfo() {
 void handleSig(int sig) {
     (void)sig;
     printf("Stopping server...\n");
-    running = 0;
+    running--;
+
+    if (running <= -2){
+        fprintf(stderr, "Server stopped forcefully\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 int httpServerServe(HttpServer *server) {
