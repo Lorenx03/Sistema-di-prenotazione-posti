@@ -1,8 +1,0 @@
-============== BIGLIETTO =============
-Codice prenotazione: 0XOO0SCY-B93KLUCS
-Film: Fast and Furious
-Orario: 23:30
-Posto: A4
-======================================
-
-
