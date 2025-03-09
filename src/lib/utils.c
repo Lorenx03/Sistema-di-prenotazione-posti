@@ -54,18 +54,6 @@ void getLine(char* str, int n, char* buffer, size_t buffer_size) {
 }
 
 
-// void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
-//     va_list args;
-//     va_start(args, format);
-//     int written = vsnprintf(*buffer_ptr, *remaining_size, format, args);
-//     va_end(args);
-
-//     if (written > 0) {
-//         *buffer_ptr += written;
-//         *remaining_size -= written;
-//     }
-// }
-
 void appendToBuffer(char **buffer_ptr, size_t *remaining_size, const char *format, ...) {
     va_list args;
     va_start(args, format);

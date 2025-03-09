@@ -244,6 +244,7 @@ void runJob(CronJob *job) {
         job->job();
         sleep(job->interval);
     }
+    job->job(); // run one last time before exiting
 }
 
 void runCronJobs(void *params) {
