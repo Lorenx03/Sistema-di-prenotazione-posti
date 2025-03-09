@@ -1,24 +1,21 @@
 #include "httpClient.h"
 
-void connectToSockServer(TargetHost *targetHost) {
-    // Crea il socket
+void connectToHost(TargetHost *targetHost) {
     targetHost->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (targetHost->sockfd < 0) {
         fprintf(stderr, "Errore nell'apertura del socket\n");
         exit(1);
     }
 
-    // printf("Socket creato con fd: %d\n", targetHost->sockfd);
+    targetHost->host_addr.sin_family = AF_INET;
+    targetHost->host_addr.sin_port = htons(targetHost->portno);
 
-    targetHost->server_addr.sin_family = AF_INET;
-    targetHost->server_addr.sin_port = htons(targetHost->portno);
-
-    if (inet_pton(AF_INET, targetHost->ip_addr, &targetHost->server_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, targetHost->ip_addr, &targetHost->host_addr.sin_addr) <= 0) {
         fprintf(stderr, "Errore nella conversione dell'indirizzo IP\n");
         exit(1);
     }
 
-    if(connect(targetHost->sockfd, (struct sockaddr *)&targetHost->server_addr, sizeof(targetHost->server_addr)) < 0) {
+    if(connect(targetHost->sockfd, (struct sockaddr *)&targetHost->host_addr, sizeof(targetHost->host_addr)) < 0) {
         fprintf(stderr, "Errore nella connessione al server\n");
         exit(1);
     }
@@ -54,7 +51,7 @@ int getHttpStatusCode(char *response) {
 
 
 int sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response) {
-    connectToSockServer(targetHost);
+    connectToHost(targetHost);
 
     char buffer[BUFFER_SIZE];
     const char *methodStr;
@@ -114,7 +111,6 @@ int sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char 
         exit(1);
     }
 
-    // Leggi la risposta del server
     int bytes_received;
     int total_bytes = 0;
     while ((bytes_received = recv(targetHost->sockfd, response + total_bytes, BUFFER_SIZE - total_bytes - 1, 0)) > 0) {

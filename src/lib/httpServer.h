@@ -37,6 +37,14 @@
     "%s"
 
 // ================================ ROUTES ================================
+/* 
+This is the tree structure for the HTTP routes, each hadler has to be set using the 
+httpRoute->handlers array, the index of the array is the HTTP method, for example:
+
+httpRoute->handlers[GET] = GETrootHandler;
+
+The tree structure is used to find the correct route based on the path of the request.
+*/
 
 // Http route struct
 typedef struct httpRoute {
@@ -103,12 +111,6 @@ void parseHttpRequest(char *request, ParsedHttpRequest *parsedRequest);
 // Sets a socket to non-blocking mode
 void setNonBlocking(int socket);
 
-// Writes data to a non-blocking socket
-size_t nonBlockWriteSocket(int file_descriptor, char *buff, size_t buffLenght);
-
-// Reads data from a non-blocking socket
-size_t nonBlockReadSocket(int file_descriptor, char *buff, size_t buffLenght);
-
 // Handles an individual client connection
 int handleClient(int connSocketFd, HttpRoute *root);
 
@@ -121,7 +123,7 @@ int httpServerServe(HttpServer *server);
 #endif
 
 
-// Example usage:
+// Example usage for a route handler:
 // void GETrootHandler(char *request, char *response) {
 //     char response_body[100];
 //     snprintf(response_body, sizeof(response_body), "Root - Thread ID: %ld", (long)pthread_self());

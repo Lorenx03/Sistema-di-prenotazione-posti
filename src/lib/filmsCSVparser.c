@@ -1,8 +1,7 @@
 #include "cinema.h"
 #include "filmsCSVparser.h"
 
-// Function to remove leading and trailing whitespace
-char* trim_whitespace(char* str) {
+char* trimWhitespace(char* str) {
     char* end;
 
     // Trim leading space
@@ -21,8 +20,7 @@ char* trim_whitespace(char* str) {
     return str;
 }
 
-// Function to parse a CSV line, handling quoted fields with commas
-void parse_films_csv_line(char *line, Film *film) {
+void parseFilmsCsvLine(char *line, Film *film) {
     //char *token;
     char *field;
     int field_count = 0;
@@ -39,7 +37,7 @@ void parse_films_csv_line(char *line, Film *film) {
         } else if (c == ',' && !inside_quotes) {
             // If we encounter a comma and are not inside quotes, process the field
             buffer[buffer_index] = '\0';  // Null-terminate the buffer
-            field = strdup(trim_whitespace(buffer));  // Trim and copy the field
+            field = strdup(trimWhitespace(buffer));  // Trim and copy the field
 
             // Assign the field to the appropriate Film structure field
             switch (field_count) {
@@ -62,24 +60,22 @@ void parse_films_csv_line(char *line, Film *film) {
         }
     }
 
-    film -> numbers_showtimes = count_showtimes(film);
+    film -> numbers_showtimes = countShowtimes(film);
 
     // Handle the last field (since there's no trailing comma)
     buffer[buffer_index] = '\0';  // Null-terminate the buffer
-    field = strdup(trim_whitespace(buffer));  // Trim and copy the field
+    field = strdup(trimWhitespace(buffer));  // Trim and copy the field
     if (field_count == 8) {
         film->columns = atoi(field);
         free(field);
     }
 }
 
-// Function to calculate the total seats in the theater
-int calculate_total_seats(Film *film) {
+int calculateTotalSeats(Film *film) {
     return film->rows * film->columns;
 }
 
-// Function to count the number of showtimes
-int count_showtimes(Film *film) {
+int countShowtimes(Film *film) {
     int count = 0;
     char showtimes[1024] = {0};
     
@@ -94,11 +90,20 @@ int count_showtimes(Film *film) {
     return count;
 }
 
-// Function to dynamically read the CSV file and store the data into the Film array
-void read_films_csv(const char *filename, Film **films, int *film_count) {
+void readFilmsCsv(const char *filename, Film **films, int *film_count) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: filename is NULL.\n");
+        exit(1);
+    }
+
+    if(strlen(filename) == 0){
+        fprintf(stderr, "Error: filename is empty.\n");
+        exit(1);
+    }
+
     FILE *file = fopen(filename, "r");
     if (!file) {
-        printf("Error: could not open file %s\n", filename);
+        fprintf(stderr, "Error: could not open file %s.\n make sure %s is present in the current directory.", filename, filename);
         exit(1);
     }
 
@@ -117,7 +122,7 @@ void read_films_csv(const char *filename, Film **films, int *film_count) {
         }
 
         // Parse each line and fill the film structure
-        parse_films_csv_line(line, &(*films)[count]);
+        parseFilmsCsvLine(line, &(*films)[count]);
 
         count++;
     }
@@ -126,8 +131,7 @@ void read_films_csv(const char *filename, Film **films, int *film_count) {
     fclose(file);
 }
 
-// Function to free memory for films
-void free_films(Film *films, int film_count) {
+void freeFilms(Film *films, int film_count) {
     for (int i = 0; i < film_count; i++) {
         free(films[i].name);
         free(films[i].genre);
@@ -139,8 +143,7 @@ void free_films(Film *films, int film_count) {
     free(films);
 }
 
-// Function to print film details to a buffer (for testing)
-void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) {
+void printFilms(char *buffer, size_t buffer_size, Film *films, int film_count) {
     size_t offset = strlen(buffer);
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset,
@@ -161,7 +164,7 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
             films[i].actors,
             films[i].plot,
             films[i].showtimes,
-            calculate_total_seats(&films[i])
+            calculateTotalSeats(&films[i])
         );
 
         if (written == 0 || written >= buffer_size - offset) {
@@ -173,8 +176,7 @@ void print_films(char *buffer, size_t buffer_size, Film *films, int film_count) 
     }
 }
 
-// Funzione per stampare i nomi dei film
-void print_films_name(char *buffer, size_t buffer_size, Film *films, int film_count) {
+void printFilmsName(char *buffer, size_t buffer_size, Film *films, int film_count) {
     size_t offset = strlen(buffer);
     for (int i = 0; i < film_count; i++) {
         size_t written = snprintf(buffer + offset, buffer_size - offset, "Film %d: %s\n", i + 1, films[i].name);
@@ -186,8 +188,7 @@ void print_films_name(char *buffer, size_t buffer_size, Film *films, int film_co
     }
 }
 
-// Function to count the number of lines in the CSV file
-int count_csv_lines(const char *filename) {
+int countCsvLines(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Error: could not open file %s\n", filename);

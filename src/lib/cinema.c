@@ -2,7 +2,7 @@
 #include "filmsCSVparser.h"
 #include "utils.h"
 
-void initialize_seats(Hall *hall, int rows, int columns) {
+void initializeSeats(Hall *hall, int rows, int columns) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++) {
             hall->seats[i][j].row = 'A' + i;
@@ -14,7 +14,7 @@ void initialize_seats(Hall *hall, int rows, int columns) {
     }    
 }
 
-void create_halls_for_showtimes(Film *film) {
+void createHallsForShowtimes(Film *film) {
     film->halls = (Hall*)malloc(film->numbers_showtimes * sizeof(Hall));
     if (!film->halls) {
         fprintf(stderr, "Errore nell'allocazione delle sale\n");
@@ -38,17 +38,17 @@ void create_halls_for_showtimes(Film *film) {
                 exit(1);
             }
         }
-        initialize_seats(&film->halls[i], film->rows, film->columns);
+        initializeSeats(&film->halls[i], film->rows, film->columns);
     }
 }
 
 void initFilmsList(const char *filename, Films *filmsStruct){
-    read_films_csv(filename, &filmsStruct->list, &filmsStruct->count); // Read the CSV file and store the films
+    readFilmsCsv(filename, &filmsStruct->list, &filmsStruct->count); // Read the CSV file and store the films
 
     // Inizializza le sale per ogni film
     for (int i = 0; i < filmsStruct->count; i++) {
-        filmsStruct->list[i].numbers_showtimes = count_showtimes(&filmsStruct->list[i]);
-        create_halls_for_showtimes(&filmsStruct->list[i]);
+        filmsStruct->list[i].numbers_showtimes = countShowtimes(&filmsStruct->list[i]);
+        createHallsForShowtimes(&filmsStruct->list[i]);
     }
 }
 

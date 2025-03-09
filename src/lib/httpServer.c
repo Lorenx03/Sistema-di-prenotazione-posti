@@ -352,8 +352,6 @@ int httpServerServe(HttpServer *server) {
     printf("Server listening on port %d...\n", server->port);
 
 
-    // setNonBlocking(serverSocket);
-
     WorkerThreadParams workerParams[server->numThreads];
     for (int i = 0; i < server->numThreads; i++) {
         workerParams[i] = (WorkerThreadParams){

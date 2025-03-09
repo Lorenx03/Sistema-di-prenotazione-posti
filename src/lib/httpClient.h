@@ -18,12 +18,18 @@
 typedef struct targetHost {
     char *ip_addr;
     int portno;
-    struct sockaddr_in server_addr;
+    struct sockaddr_in host_addr;
     int sockfd;
 } TargetHost;
 
-void connectToSockServer(TargetHost *targetHost);
+// Try to connect to the host, polulates the sockfd field of the targetHost struct
+void connectToHost(TargetHost *targetHost);
+
+// Send an HTTP request to the target host and store the response in the response buffer
+// Returns the HTTP status code
 int sendHttpRequest(TargetHost *targetHost, HttpMethod method, char *path, char *body, char *response);
+
+// Removes the headers from an HTTP response
 void removeHttpHeaders(char *response);
 
 #endif // HTTPCLIENT_H

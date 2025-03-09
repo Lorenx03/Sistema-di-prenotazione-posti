@@ -46,7 +46,7 @@ void GETFilmsHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), COLOR_BOLD"Lista dei film:\n"COLOR_OFF);
-    print_films(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
+    printFilms(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
     httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
@@ -55,7 +55,7 @@ void GETFilmsListHandler(char *request, char *response) {
     (void)request;
     char response_body[MAX_RESPONSE_SIZE] = {0};
     snprintf(response_body, sizeof(response_body), "Lista dei film:\n");
-    print_films_name(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
+    printFilmsName(response_body, MAX_RESPONSE_SIZE, cinemaFilms.list, cinemaFilms.count);
     httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
@@ -125,6 +125,11 @@ void POSTBookSeat(char *request, char *response){
     char response_body[MAX_RESPONSE_SIZE] = {0};
     size_t buffSize = MAX_RESPONSE_SIZE;
     char *current_ptr = response_body;
+
+    if(strlen(request) == 0){
+        httpResponseBuilder(response, HTTP_STATUS_BAD_REQUEST, "Bad Request", "Richiesta non valida\n");
+        return;
+    }
 
     //exaple request: 1.1
     char *saveptr;

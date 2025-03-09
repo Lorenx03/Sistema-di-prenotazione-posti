@@ -12,7 +12,7 @@ enum Pages {
     EXIT
 };
 
-// Utils
+// ====================== Utils ======================
 
 void printClearedResponse(char *response) {
     removeHttpHeaders(response);
@@ -51,7 +51,7 @@ void parseSeat(char *seat, char *row, int *column) {
 }
 
 
-// Book a seat
+// Book a seat page
 void bookSeatPages(TargetHost *targetHost, int film_id) {
     char response[4096];
     char requestBody[4096];
@@ -67,7 +67,6 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
     int seatChoiceColumn = 0;
 
     char hallMap[2048] = {0}; // Map sent by the server
-    // TODO: Might do with heap
     char hallMapBuff[8192] = {0}; // Buffer to show to the user
     char hallMapMostWideLine[512] = {0};
 
@@ -270,7 +269,7 @@ void bookSeatPages(TargetHost *targetHost, int film_id) {
 
             getLine(response, 1, ticketName, sizeof(ticketName));
             memmove(response, response + strlen(ticketName) + 1, strlen(response) - strlen(ticketName));
-            strncat(ticketName, ".txt", 4);
+            strncat(ticketName, ".txt", sizeof(ticketName) - strlen(ticketName) - 1);
 
             printf("%s\n", response);
 
@@ -388,7 +387,7 @@ void unBookSeatPage(TargetHost *targetHost) {
                     printf("\033[1;31mCodice non valido\033[0m\n");
                     printf("(Premi invio per riprovare)");
                     waitForKey();
-                    currentPage = -1; // going back to the selection menu
+                    currentPage = -1;
                     break;
                 }
 
@@ -397,7 +396,7 @@ void unBookSeatPage(TargetHost *targetHost) {
                     printf("\033[1;31mErrore nella richiesta: %s\033[0m\n", response);
                     printf("(Premi invio per riprovare)");
                     waitForKey();
-                    currentPage = -1; // going back to the selection menu
+                    currentPage = -1;
                     break;
                 }
                 
@@ -457,6 +456,7 @@ int main(int argc, char *argv[]) {
     int currentPage = 0;
     char responseBuffer[4096];
 
+    // Cinema server address
     TargetHost targetHost = {
         .ip_addr = ip_addr,
         .portno = port
