@@ -2,6 +2,8 @@
 #include "filmsCSVparser.h"
 #include "utils.h"
 
+pthread_mutex_t bookingsFileLock = PTHREAD_MUTEX_INITIALIZER;
+
 void initializeSeats(Hall *hall, int rows, int columns) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++) {
@@ -132,7 +134,8 @@ int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCode
         if ( 
             seats[i][0] < 0 || 
             seats[i][0] >= hall->rows ||
-            seats[i][1] < 0 || seats[i][1] >= hall->columns
+            seats[i][1] < 0 || 
+            seats[i][1] >= hall->columns
         ) {
             fprintf(stderr, "bookSeat: Invalid seat coordinates\n");
 
@@ -156,34 +159,63 @@ int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCode
 }
 
 
-// TODO: Change this
-int saveBookingsToFile(Films *filmsStruct, const char *filename){
-    FILE *file = fopen(filename, "w");
+// // TODO: Change this
+// int saveBookingsToFile(Films *filmsStruct, const char *filename){
+//     FILE *file = fopen(filename, "w");
+//     if (file == NULL) {
+//         perror("Error opening file");
+//         return 1;
+//     }
+
+//     for (int i = 0; i < filmsStruct->count; i++) {
+//         for (int j = 0; j < filmsStruct->list[i].numbers_showtimes; j++) {
+//             for (int r = 0; r < filmsStruct->list[i].rows; r++) {
+//                 for (int c = 0; c < filmsStruct->list[i].columns; c++) {
+//                     if (filmsStruct->list[i].halls[j].seats[r][c].state == BOOKED) {
+//                         // Again we use trylock, not to avoid blocking but if the lock is locked it means that the seat is being booked, and thus is in a non-consistent state, so we skip it to check on it later.
+//                         if (pthread_mutex_trylock(&filmsStruct->list[i].halls[j].seats[r][c].lock) == 0) {
+//                             fprintf(file, "%d.%d.%c%d.%s\n", i, j, 'A' + r, c + 1, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
+//                             pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     fflush(file);
+//     fclose(file);
+//     return 0;
+// }
+
+int saveBookingsToFile(int filmIndex, int showtimeIndex, int row, int col, char *bookingCode, const char *filename){
+    if(filmIndex >= 0 && showtimeIndex >= 0 && bookingCode == NULL && filename == NULL){
+        fprintf(stderr, "saveBookingsToFile: Invalid parameters\n");
+        return 1;
+    }
+    
+    if(row < 'A' || row > 'Z' || col < 1 || col > 99){
+        fprintf(stderr, "printTicketToBuff: Invalid seat\n");
+        return 1;
+    }
+
+    FILE *file = fopen(filename, "a");
     if (file == NULL) {
         perror("Error opening file");
         return 1;
     }
 
-    for (int i = 0; i < filmsStruct->count; i++) {
-        for (int j = 0; j < filmsStruct->list[i].numbers_showtimes; j++) {
-            for (int r = 0; r < filmsStruct->list[i].rows; r++) {
-                for (int c = 0; c < filmsStruct->list[i].columns; c++) {
-                    if (filmsStruct->list[i].halls[j].seats[r][c].state == BOOKED) {
-                        // Again we use trylock, not to avoid blocking but if the lock is locked it means that the seat is being booked, and thus is in a non-consistent state, so we skip it to check on it later.
-                        if (pthread_mutex_trylock(&filmsStruct->list[i].halls[j].seats[r][c].lock) == 0) {
-                            fprintf(file, "%d.%d.%c%d.%s\n", i, j, 'A' + r, c + 1, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
-                            pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+    pthread_mutex_lock(&bookingsFileLock);
+    fprintf(file, "%d.%d.%c%d.%s\n", filmIndex, showtimeIndex, row, col, bookingCode);
     fflush(file);
+    pthread_mutex_unlock(&bookingsFileLock);
+    
     fclose(file);
     return 0;
 }
+
+
+
 
 int loadBookingsFromFile(Films *filmsStruct, const char *filename){
     FILE *file = fopen(filename, "r");

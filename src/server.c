@@ -216,6 +216,10 @@ void POSTBookSeat(char *request, char *response){
 
             if (bookSeats(&film->halls[hall_index - 1], numSeats, seatsToBook, bookingCodes) == 0){
                 for (int i = 0; i < numSeats; i++){
+                    if(saveBookingsToFile(selected_film - 1, hall_index - 1, seatsToBook[i][0] + 'A',seatsToBook[i][1] + 1, bookingCodes[i], "bookings.csv") == 1){
+                        httpResponseBuilder(response, HTTP_STATUS_INTERNAL_SERVER_ERROR, "Internal Server Error", "Errore interno del server\n");
+                        return;
+                    }
                     printTicketToBuff(&current_ptr, bookingCodes[i], film->name, showtime, seatsToBook[i][0] + 'A',seatsToBook[i][1] + 1, &buffSize);
                 }
                 httpResponseBuilder(response, HTTP_STATUS_CREATED, "OK", response_body);
@@ -276,12 +280,6 @@ void POSTUnbookSeat(char *request, char *response) {
 }
 
 
-
-// Cron job that saves the current state of the data structures to a file, so that the threads dont have to do it
-void saveBookingsCronJob(void) {
-    printf("Saving bookings to file\n");
-    saveBookingsToFile(&cinemaFilms, "bookings.csv");
-}
 
 // ./server -p <port> -t <numThreads>
 int main(int argc, char *argv[]) {
@@ -355,22 +353,11 @@ int main(int argc, char *argv[]) {
     addHttpSubroute(&filmsRoute, &filmsListRoute); // /films/list
     addHttpSubroute(&filmsRoute, &filmHallMapRoute); // /films/map
 
-    CronJob jobs[1] = {
-        {
-            .job = saveBookingsCronJob,
-            .interval = 10
-        }
-    };
-    
-    HttpServerCronJobs cronJobs = {
-        .jobs = jobs,
-        .numJobs = 1
-    };
 
     HttpServer server = {
         .port = port,
         .numThreads = numThreads,
-        .cronJobs = &cronJobs,
+        .cronJobs = NULL,
         .root = &rootRoute
     };
 

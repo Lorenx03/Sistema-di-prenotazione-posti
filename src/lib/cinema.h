@@ -85,7 +85,7 @@ void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *fi
 // Function used by the cron job to save the bookings to a file
 // The file format is CSV, each line is a booking with the following format:
 // film_id.showtime_id.seat.booking_code
-int saveBookingsToFile(Films *filmsStruct, const char *filename);
+int saveBookingsToFile(int filmIndex, int showtimeIndex, int row, int col, char *bookingCode, const char *filename);
 
 // Loads the bookings from a file, the file format must be the same as the one saved by the saveBookingsToFile function
 // Returns 0 if the bookings were loaded successfully, 1 if there was an error

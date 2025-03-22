@@ -388,19 +388,23 @@ int httpServerServe(HttpServer *server) {
 
     // Cron jobs
     pthread_t cronThread;
-    if (server->cronJobs->numJobs > 0) {
-        if (pthread_create(&cronThread, NULL, (void*)runCronJobs, server->cronJobs) != 0) {
-            fprintf(stderr, "Cron thread creation failed: %s\n", strerror(errno));
-            close(serverSocket);
-            return EXIT_FAILURE;
+    if(server->cronJobs != NULL){
+        if (server->cronJobs->numJobs > 0) {
+            if (pthread_create(&cronThread, NULL, (void*)runCronJobs, server->cronJobs) != 0) {
+                fprintf(stderr, "Cron thread creation failed: %s\n", strerror(errno));
+                close(serverSocket);
+                return EXIT_FAILURE;
+            }
         }
     }
 
     workerRoutine(&workerParams[0]);
 
     // Cleanup
-    if (server->cronJobs->numJobs > 0) {
-        pthread_join(cronThread, NULL);
+    if(server->cronJobs != NULL){
+        if (server->cronJobs->numJobs > 0) {
+            pthread_join(cronThread, NULL);
+        }
     }
 
     shutdown(serverSocket, SHUT_RDWR);
