@@ -162,34 +162,104 @@ int handleClient(int connSocketFd, HttpRoute *root){
     char rawRequest[MAX_REQUEST_SIZE] = {0};
     char response[MAX_RESPONSE_SIZE] = {0};
 
-    // printf("\n\nHandling client\n");
+    struct timeval timeout;
+    timeout.tv_sec = 10;  // 10s
+    timeout.tv_usec = 0;
+    if (setsockopt(connSocketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        fprintf(stderr, "handleClient: setsockopt timeout failed: %s\n", strerror(errno));
+        return -1;
+    }
+
     // READ
-    ssize_t bytesRead = recv(connSocketFd, rawRequest, MAX_REQUEST_SIZE - 1, 0);
-    if (bytesRead < 0) {
-        fprintf(stderr, "Error reading from socket: %s\n", strerror(errno));
-        return -1;
-    }
-    if (bytesRead == 0) {
-        printf("Client disconnected\n");
-        return -1;
-    }
-    rawRequest[bytesRead] = '\0';
-
-    // printf("bytesRead: %zd\n", bytesRead);
-    // printf("Raw request:\n%s\n", rawRequest);
-
-    ParsedHttpRequest parsedRequest;
-    parseHttpRequest(rawRequest, &parsedRequest);
-    HttpRoute *route = findHttpRoute(root, parsedRequest.path);
-
-    if (route != NULL) {
-        if (route->handlers[parsedRequest.method] != NULL) {
-            route->handlers[parsedRequest.method](parsedRequest.body, response);
-        } else {
-            errorResponse(response, 405);
+    ssize_t bytesRead = 0;
+    size_t totalBytesRead = 0;
+    bool requestComplete = false;
+    
+    while (!requestComplete && totalBytesRead < MAX_REQUEST_SIZE - 1) {
+        bytesRead = recv(connSocketFd, rawRequest + totalBytesRead, MAX_REQUEST_SIZE - totalBytesRead - 1, 0);
+        
+        if (bytesRead < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // Timeout
+                fprintf(stderr, "handleClient: timeout waiting for data from client\n");
+            } else {
+                fprintf(stderr, "Error reading from socket: %s\n", strerror(errno));
+            }
+            return -1;
         }
-    } else {
-        errorResponse(response, 404);
+        
+        if (bytesRead == 0) {
+            printf("Client disconnected\n");
+            return -1;
+        }
+        
+        totalBytesRead += bytesRead;
+        rawRequest[totalBytesRead] = '\0';
+        
+        // Verify if the request is complete
+        char *headerEnd = strstr(rawRequest, "\r\n\r\n");
+        if (headerEnd != NULL) {
+            headerEnd += 4; // Skip "\r\n\r\n"
+            
+            char *contentLength = strstr(rawRequest, "Content-Length:");
+            if (contentLength != NULL) {
+                // Extract the content length as a string first
+                char lengthStr[32] = {0};
+                char *start = contentLength + 15; // Skip "Content-Length: "
+                char *end = strpbrk(start, "\r\n"); // Find end of header line
+                
+                if (end != NULL) {
+                    size_t len = end - start;
+                    if (len < sizeof(lengthStr)) {
+                        strncpy(lengthStr, start, len);
+                        lengthStr[len] = '\0';
+                        
+                        int length = safeStrToInt(lengthStr);
+                        printf("Content-Length: %d\n", length);
+
+                        if (length >= 0) {
+                            size_t bodyReceived = totalBytesRead - (headerEnd - rawRequest);
+                            
+                            // If we have received the entire body, the request is complete
+                            if (bodyReceived >= (size_t)length) {
+                                requestComplete = true;
+                            }
+                        } else {
+                            fprintf(stderr, "Invalid Content-Length value\n");
+                            requestComplete = true; 
+                        }
+                    } else {
+                        fprintf(stderr, "Content-Length value too long\n");
+                        requestComplete = true;
+                    }
+                } else {
+                    fprintf(stderr, "Malformed Content-Length header\n");
+                    requestComplete = true;
+                }
+            } else {
+                // No Content-Length, the request is complete after the headers
+                requestComplete = true;
+            }
+        }
+    }
+    
+    if (!requestComplete && totalBytesRead >= MAX_REQUEST_SIZE - 1) {
+        fprintf(stderr, "Request too large or incomplete, truncated\n");
+        errorResponse(response, HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    }else{
+        ParsedHttpRequest parsedRequest;
+        parseHttpRequest(rawRequest, &parsedRequest);
+        HttpRoute *route = findHttpRoute(root, parsedRequest.path);
+
+        if (route != NULL) {
+            if (route->handlers[parsedRequest.method] != NULL) {
+                route->handlers[parsedRequest.method](parsedRequest.body, response); // Call the handler
+            } else {
+                errorResponse(response, HTTP_STATUS_METHOD_NOT_ALLOWED);
+            }
+        } else {
+            errorResponse(response, HTTP_STATUS_NOT_FOUND);
+        }
     }
 
     // WRITE

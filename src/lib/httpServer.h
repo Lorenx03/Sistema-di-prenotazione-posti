@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 
 #include "userInput.h"
+#include "utils.h"
 #include "httpLib.h"
 
 #define MAX_ROUTE_NAME 100
