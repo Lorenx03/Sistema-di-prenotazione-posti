@@ -159,35 +159,6 @@ int bookSeats(Hall *hall, int numSeats, int seats[numSeats][2], char bookingCode
 }
 
 
-// // TODO: Change this
-// int saveBookingsToFile(Films *filmsStruct, const char *filename){
-//     FILE *file = fopen(filename, "w");
-//     if (file == NULL) {
-//         perror("Error opening file");
-//         return 1;
-//     }
-
-//     for (int i = 0; i < filmsStruct->count; i++) {
-//         for (int j = 0; j < filmsStruct->list[i].numbers_showtimes; j++) {
-//             for (int r = 0; r < filmsStruct->list[i].rows; r++) {
-//                 for (int c = 0; c < filmsStruct->list[i].columns; c++) {
-//                     if (filmsStruct->list[i].halls[j].seats[r][c].state == BOOKED) {
-//                         // Again we use trylock, not to avoid blocking but if the lock is locked it means that the seat is being booked, and thus is in a non-consistent state, so we skip it to check on it later.
-//                         if (pthread_mutex_trylock(&filmsStruct->list[i].halls[j].seats[r][c].lock) == 0) {
-//                             fprintf(file, "%d.%d.%c%d.%s\n", i, j, 'A' + r, c + 1, filmsStruct->list[i].halls[j].seats[r][c].booking_code);
-//                             pthread_mutex_unlock(&filmsStruct->list[i].halls[j].seats[r][c].lock);
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-
-//     fflush(file);
-//     fclose(file);
-//     return 0;
-// }
-
 int saveBookingsToFile(int filmIndex, int showtimeIndex, int row, int col, char *bookingCode, const char *filename){
     if(filmIndex >= 0 && showtimeIndex >= 0 && bookingCode == NULL && filename == NULL){
         fprintf(stderr, "saveBookingsToFile: Invalid parameters\n");
@@ -215,6 +186,36 @@ int saveBookingsToFile(int filmIndex, int showtimeIndex, int row, int col, char 
 }
 
 
+int removeBookingFromFile(char *bookingCode, const char *filename){
+    if(bookingCode == NULL || filename == NULL){
+        fprintf(stderr, "removeBookingFromFile: Invalid parameters\n");
+        return 1;
+    }
+
+    printf("removeBookingFromFile: %s\n", bookingCode);
+
+    FILE *file = fopen(filename, "r+");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    char line[1024] = {0};
+    
+    pthread_mutex_lock(&bookingsFileLock);
+    while(fgets(line, sizeof(line), file) != NULL){
+        if (strstr(line, bookingCode) != NULL){
+            fseek(file, -strlen(line), SEEK_CUR);
+            fdeleteBytes(file, strlen(line));
+            fflush(file);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&bookingsFileLock);
+
+    fclose(file);
+    return 0;
+}
 
 
 int loadBookingsFromFile(Films *filmsStruct, const char *filename){

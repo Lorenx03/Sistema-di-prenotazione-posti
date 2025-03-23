@@ -129,3 +129,31 @@ void convertToUppercase(char *str){
         }
     }
 }
+
+
+int fdeleteBytes(FILE* fp, int bytes) {
+    // to store each char from file
+    char byte;
+
+    long readPos = ftell(fp) + bytes;
+    long writePos = ftell(fp);
+    long startingPos = writePos;
+
+    // start reading from the position which comes after the bytes to be deleted
+    fseek(fp, readPos, SEEK_SET);
+
+    while (fread(&byte, sizeof(byte), 1, fp)) {
+        readPos = ftell(fp);
+        fseek(fp, writePos, SEEK_SET);
+        
+        if (fwrite(&byte, sizeof(byte), 1, fp) == 0) 
+            return errno;
+
+        writePos = ftell(fp);
+        fseek(fp, readPos, SEEK_SET);
+    }
+
+    ftruncate(fileno(fp), writePos);
+    fseek(fp, startingPos, SEEK_SET); 
+    return 0;
+}

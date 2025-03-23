@@ -261,7 +261,11 @@ void POSTUnbookSeat(char *request, char *response) {
                             found = true;
 
                             printf("Removing prenotation: %s\n", cinemaFilms.list[i].halls[j].seats[k][l].booking_code);
+                            
                             cinemaFilms.list[i].halls[j].seats[k][l].state = !(k == (cinemaFilms.list[i].halls[j].rows-1) && l >= 0 && l <= 2) ? FREE : DISABLED;
+
+                            removeBookingFromFile(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, "bookings.csv");
+                            
                             memset(cinemaFilms.list[i].halls[j].seats[k][l].booking_code, 0, sizeof(cinemaFilms.list[i].halls[j].seats[k][l].booking_code));
 
                             pthread_mutex_unlock(&cinemaFilms.list[i].halls[j].seats[k][l].lock);

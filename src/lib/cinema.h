@@ -87,6 +87,8 @@ void printTicketToBuff(char **buff, char *bookingCode, char *filmTitle, char *fi
 // film_id.showtime_id.seat.booking_code
 int saveBookingsToFile(int filmIndex, int showtimeIndex, int row, int col, char *bookingCode, const char *filename);
 
+int removeBookingFromFile(char *bookingCode, const char *filename);
+
 // Loads the bookings from a file, the file format must be the same as the one saved by the saveBookingsToFile function
 // Returns 0 if the bookings were loaded successfully, 1 if there was an error
 int loadBookingsFromFile(Films *filmsStruct, const char *filename);

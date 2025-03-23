@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 // Safe string to int conversion
 int safeStrToInt(char *buff);
@@ -25,5 +26,8 @@ void getNthToken(char *str, char *delim, int n, char *token, size_t token_size);
 
 // converts a string to uppercase
 void convertToUppercase(char *str);
+
+// deletes n bytes from a file
+int fdeleteBytes(FILE* fp, int bytes);
 
 #endif
