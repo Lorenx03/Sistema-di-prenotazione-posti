@@ -192,7 +192,7 @@ int removeBookingFromFile(char *bookingCode, const char *filename){
         return 1;
     }
 
-    printf("removeBookingFromFile: %s\n", bookingCode);
+    // printf("removeBookingFromFile: %s\n", bookingCode);
 
     FILE *file = fopen(filename, "r+");
     if (file == NULL) {

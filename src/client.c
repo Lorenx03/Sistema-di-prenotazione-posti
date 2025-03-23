@@ -418,6 +418,13 @@ void unBookSeatPage(TargetHost *targetHost) {
     }while (currentPage != 0);
 }
 
+
+void handleStop() {
+    printf("\n\nChiusura del client...\n");
+    sleep(1);
+    exit(0);
+}
+
 // ./client -a <ip> -p <port>
 int main(int argc, char *argv[]) {
     // Default values
@@ -464,6 +471,15 @@ int main(int argc, char *argv[]) {
     };
 
     int choice = 0;
+
+    // Handle SIGINT
+    struct sigaction sa;
+    sa.sa_handler = handleStop;
+    sigfillset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
     
     do{
         switch (currentPage) {

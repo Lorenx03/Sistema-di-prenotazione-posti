@@ -1,6 +1,19 @@
 #include "httpClient.h"
 
+void sigPipeHandler() {
+    fprintf(stderr, "EPIPE: Connection closed unexpectedly\n");
+    printf("(Press any key to exit)\n");
+    waitForKey();
+    exit(1);
+}
+
 void connectToHost(TargetHost *targetHost) {
+    struct sigaction sa_pipe;
+    sa_pipe.sa_handler = sigPipeHandler;
+    sigemptyset(&sa_pipe.sa_mask);
+    sa_pipe.sa_flags = 0;
+    sigaction(SIGPIPE, &sa_pipe, NULL);
+
     targetHost->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (targetHost->sockfd < 0) {
         fprintf(stderr, "Errore nell'apertura del socket\n");

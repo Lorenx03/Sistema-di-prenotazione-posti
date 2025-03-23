@@ -107,8 +107,8 @@ void GETFilmHallMapHandler(char *request, char *response) {
         }
     }
 
-    printf("selected_film: %d\n", selected_film);
-    printf("hall_index: %d\n", hall_index);
+    // printf("selected_film: %d\n", selected_film);
+    // printf("hall_index: %d\n", hall_index);
 
     if (selected_film > 0 && selected_film <= cinemaFilms.count && hall_index > 0 && hall_index <= cinemaFilms.list[selected_film - 1].numbers_showtimes){
         Film *film = &cinemaFilms.list[selected_film - 1];
@@ -117,7 +117,7 @@ void GETFilmHallMapHandler(char *request, char *response) {
         snprintf(response_body, sizeof(response_body), "Film non trovato\n");
     }
     
-    printf("response_body: %s\n", response_body);
+    // printf("response_body: %s\n", response_body);
     httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
@@ -173,8 +173,8 @@ void POSTBookSeat(char *request, char *response){
                 return;
             }
 
-            printf("selected_film: %d\n", selected_film);
-            printf("hall_index: %d\n", hall_index);
+            // printf("selected_film: %d\n", selected_film);
+            // printf("hall_index: %d\n", hall_index);
 
             // Select the film and the hall
             Film *film = &cinemaFilms.list[selected_film - 1];
@@ -239,7 +239,7 @@ void POSTUnbookSeat(char *request, char *response) {
     }
     bool found = false;
 
-    printf("POSTUnbookSeat - %s\n", request);
+    // printf("POSTUnbookSeat - %s\n", request);
 
     for(int i = 0; i < cinemaFilms.count; i++){
         for(int j = 0; j < cinemaFilms.list[i].numbers_showtimes; j++){

@@ -153,7 +153,7 @@ int fdeleteBytes(FILE* fp, int bytes) {
         fseek(fp, readPos, SEEK_SET);
     }
 
-    ftruncate(fileno(fp), writePos);
+    (void)ftruncate(fileno(fp), writePos);
     fseek(fp, startingPos, SEEK_SET); 
     return 0;
 }

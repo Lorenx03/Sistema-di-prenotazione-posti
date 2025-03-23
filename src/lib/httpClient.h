@@ -7,8 +7,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <signal.h>
 
 #include "utils.h"
+#include "userInput.h"
 #include "httpLib.h"
 
 // Buffer size

@@ -222,7 +222,7 @@ int handleClient(int connSocketFd, HttpRoute *root){
                         lengthStr[len] = '\0';
                         
                         int length = safeStrToInt(lengthStr);
-                        printf("Content-Length: %d\n", length);
+                        // printf("Content-Length: %d\n", length);
 
                         if (length >= 0) {
                             size_t bodyReceived = totalBytesRead - (headerEnd - rawRequest);
