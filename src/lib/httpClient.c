@@ -19,6 +19,19 @@ void connectToHost(TargetHost *targetHost) {
         fprintf(stderr, "Errore nella connessione al server\n");
         exit(1);
     }
+
+    // Send timeout
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    if (setsockopt(targetHost->sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+        fprintf(stderr, "Errore nell'impostazione del timeout di ricezione\n");
+        exit(1);
+    }
+    if (setsockopt(targetHost->sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
+        fprintf(stderr, "Errore nell'impostazione del timeout di invio\n");
+        exit(1);
+    }
 }
 
 void removeHttpHeaders(char *response) {

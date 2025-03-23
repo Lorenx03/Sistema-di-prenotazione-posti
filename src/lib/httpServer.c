@@ -1,6 +1,6 @@
 #include "httpServer.h"
 
-volatile sig_atomic_t running = 1; // Flag to stop the server
+atomic_int running = 1; // Flag to stop the server
 
 // ================================ ROUTES ================================
 
@@ -146,6 +146,9 @@ int sendall(int s, char *buf, int *len) {
     while (total < *len) {
         n = send(s, buf + total, bytesleft, 0);
         if (n == -1) {
+            if (errno == EPIPE) {
+                fprintf(stderr, "Client connection closed unexpectedly\n");
+            }
             break;
         }
         total += n;
@@ -166,6 +169,10 @@ int handleClient(int connSocketFd, HttpRoute *root){
     timeout.tv_sec = 10;  // 10s
     timeout.tv_usec = 0;
     if (setsockopt(connSocketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        fprintf(stderr, "handleClient: setsockopt timeout failed: %s\n", strerror(errno));
+        return -1;
+    }
+    if (setsockopt(connSocketFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
         fprintf(stderr, "handleClient: setsockopt timeout failed: %s\n", strerror(errno));
         return -1;
     }
@@ -287,10 +294,10 @@ void *workerRoutine(void *params) {
     struct sockaddr_in clientAddress;
     socklen_t clientLength;
 
-    while (running == 1) {
+    while (atomic_load(&running) == 1) {
         // Accept
         int connSocketFd = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
-        if (connSocketFd < 0 && running == 1) {
+        if (connSocketFd < 0 && atomic_load(&running) == 1) {
             fprintf(stderr, "Accept failed: %s\n", strerror(errno));
             continue;
         }else if (running <= 0){
@@ -369,18 +376,81 @@ int printHostInfo() {
 
 // ----------------------- SERVER -----------------------
 
-void handleSig(int sig) {
+void handleSigStop(int sig) {
     (void)sig;
     printf("Stopping server...\n");
-    running--;
+    atomic_fetch_sub(&running, 1);
 
-    if (running <= -2){
+    if (atomic_load(&running) <= -2){
         fprintf(stderr, "Server stopped forcefully\n");
         exit(EXIT_FAILURE);
     }
 }
 
+void handleCriticalError(int sig) {
+    const char *signame;
+    
+    switch (sig) {
+        case SIGSEGV: signame = "SIGSEGV (Segmentation Fault)"; break;
+        case SIGBUS:  signame = "SIGBUS (Bus Error)"; break;
+        case SIGFPE:  signame = "SIGFPE (Floating Point Exception)"; break;
+        case SIGILL:  signame = "SIGILL (Illegal Instruction)"; break;
+        case SIGABRT: signame = "SIGABRT (Abort)"; break;
+        default:      signame = "Unknown"; break;
+    }
+    
+    fprintf(stderr, "\n======== CRITICAL ERROR ========\n");
+    fprintf(stderr, "Received signal: %s (number: %d)\n", signame, sig);
+    fprintf(stderr, "Attempting safe shutdown...\n");
+    atomic_store(&running, -10);
+    
+    fprintf(stderr, "The server will be terminated.\n");
+    fprintf(stderr, "================================\n\n");
+    
+    
+    struct sigaction sa_dfl;
+    sa_dfl.sa_handler = SIG_DFL;
+    sigemptyset(&sa_dfl.sa_mask);
+    sa_dfl.sa_flags = 0;
+    sigaction(sig, &sa_dfl, NULL);
+
+    raise(sig);
+}
+
 int httpServerServe(HttpServer *server) {
+    // Signal handlers
+    struct sigaction sa_stop;
+    sa_stop.sa_handler = handleSigStop;  
+    sa_stop.sa_flags = 0;                
+    sigfillset(&sa_stop.sa_mask);
+
+    sigaction(SIGINT, &sa_stop, NULL);
+    sigaction(SIGQUIT, &sa_stop, NULL);
+    sigaction(SIGTERM, &sa_stop, NULL);
+    sigaction(SIGHUP, &sa_stop, NULL);
+
+    struct sigaction sa_ignore;
+    sa_ignore.sa_handler = SIG_IGN;
+    sigemptyset(&sa_ignore.sa_mask);
+    sa_ignore.sa_flags = 0;
+    
+    sigaction(SIGPIPE, &sa_ignore, NULL);
+    sigaction(SIGALRM, &sa_ignore, NULL);
+    sigaction(SIGUSR1, &sa_ignore, NULL); 
+    sigaction(SIGUSR2, &sa_ignore, NULL);
+
+    struct sigaction sa_critical;
+    sa_critical.sa_handler = handleCriticalError;
+    sigemptyset(&sa_critical.sa_mask);
+    sa_critical.sa_flags = 0;
+    
+    sigaction(SIGSEGV, &sa_critical, NULL);
+    sigaction(SIGBUS, &sa_critical, NULL);
+    sigaction(SIGFPE, &sa_critical, NULL);
+    sigaction(SIGILL, &sa_critical, NULL);
+    sigaction(SIGABRT, &sa_critical, NULL);
+
+
     int serverSocket; // Socket file descriptor
     struct sockaddr_in serverAddress; // Server address
 
@@ -447,14 +517,6 @@ int httpServerServe(HttpServer *server) {
         }
     }
 
-    // Signal handler
-    struct sigaction sa;
-    sa.sa_handler = handleSig;  
-    sa.sa_flags = 0;                
-    sigemptyset(&sa.sa_mask);
-
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
 
     // Cron jobs
     pthread_t cronThread;

@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <stdatomic.h>
 
 #include "userInput.h"
 #include "utils.h"

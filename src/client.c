@@ -448,6 +448,9 @@ int main(int argc, char *argv[]) {
             }
             strncpy(ip_addr, argv[i + 1], sizeof(ip_addr) - 1);
             i++;
+        } else {
+            fprintf(stderr, "Invalid arguments, use -h for help\n");
+            return 1;
         }
     }
 

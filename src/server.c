@@ -13,6 +13,7 @@ Films cinemaFilms = {0};
 // Http route: /
 void GETrootHandler(char *request, char *response) {
     (void)request;
+    
     char response_body[MAX_RESPONSE_SIZE] = {0};
     size_t buffSize = MAX_RESPONSE_SIZE;
     char *current_ptr = response_body;
@@ -314,6 +315,9 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
             i++;
+        } else {
+            fprintf(stderr, "Invalid arguments, use -h for help\n");
+            return 1;
         }
     }
 
