@@ -49,6 +49,11 @@ void GETWebPageHandler(char *request, char *response){
     FILE *file = fopen("index.html", "r");
     if (file) {
         size_t bytesRead = fread(response_body, sizeof(char), MAX_RESPONSE_SIZE - 1, file);
+        if(bytesRead == 0){
+            snprintf(response_body, sizeof(response_body), "Error loading web page\n");
+            httpResponseBuilder(response, HTTP_STATUS_NOT_FOUND, "Not Found", response_body);
+            return;
+        }
         response_body[bytesRead] = '\0'; // Ensure null-termination
         fclose(file);
         httpResponseBuilderHTML(response, HTTP_STATUS_OK, "OK", response_body);
