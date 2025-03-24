@@ -42,6 +42,22 @@ void GETrootHandler(char *request, char *response) {
     httpResponseBuilder(response, HTTP_STATUS_OK, "OK", response_body);
 }
 
+void GETWebPageHandler(char *request, char *response){
+    (void)request;
+    char response_body[MAX_RESPONSE_SIZE] = {0};
+
+    FILE *file = fopen("index.html", "r");
+    if (file) {
+        size_t bytesRead = fread(response_body, sizeof(char), MAX_RESPONSE_SIZE - 1, file);
+        response_body[bytesRead] = '\0'; // Ensure null-termination
+        fclose(file);
+        httpResponseBuilderHTML(response, HTTP_STATUS_OK, "OK", response_body);
+    } else {
+        snprintf(response_body, sizeof(response_body), "Error loading web page\n");
+        httpResponseBuilder(response, HTTP_STATUS_NOT_FOUND, "Not Found", response_body);
+    }
+}
+
 // Http route: /films
 void GETFilmsHandler(char *request, char *response) {
     (void)request;
@@ -328,6 +344,10 @@ int main(int argc, char *argv[]) {
     rootRoute.name = "/";
     rootRoute.handlers[GET] = GETrootHandler;
 
+    HttpRoute webPageRoute = {0};
+    webPageRoute.name = "index.html";
+    webPageRoute.handlers[GET] = GETWebPageHandler;
+
     HttpRoute filmsRoute = {0};
     filmsRoute.name = "films";
     filmsRoute.handlers[GET] = GETFilmsHandler;
@@ -353,6 +373,7 @@ int main(int argc, char *argv[]) {
     bookUnbookRoute.handlers[POST] = POSTUnbookSeat;
 
 
+    addHttpSubroute(&rootRoute, &webPageRoute); // /index.html
     addHttpSubroute(&rootRoute, &filmsRoute); // /films
     addHttpSubroute(&rootRoute, &bookRoute); // /book
     addHttpSubroute(&rootRoute, &bookUnbookRoute); // /unbook

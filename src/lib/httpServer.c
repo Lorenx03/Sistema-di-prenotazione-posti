@@ -50,7 +50,11 @@ HttpRoute *findHttpRoute(HttpRoute *currentNode, char *path) {
 // ----------------------- RESPONSES -----------------------
 
 void httpResponseBuilder(char *response, int statusCode, const char *statusMessage, const char *responseBody) {
-    snprintf(response, MAX_RESPONSE_SIZE, HTTP_RESPONSE_TEMPLATE, statusCode, statusMessage, strlen(responseBody), responseBody);
+    snprintf(response, MAX_RESPONSE_SIZE, HTTP_RESPONSE_TEMPLATE, statusCode, statusMessage, "text/plain", strlen(responseBody), responseBody);
+}
+
+void httpResponseBuilderHTML(char *response, int statusCode, const char *statusMessage, const char *responseBody) {
+    snprintf(response, MAX_RESPONSE_SIZE, HTTP_RESPONSE_TEMPLATE, statusCode, statusMessage, "text/html", strlen(responseBody), responseBody);
 }
 
 void errorResponse(char *response, int errorCode) {
@@ -441,7 +445,7 @@ int httpServerServe(HttpServer *server) {
 
     struct sigaction sa_critical;
     sa_critical.sa_handler = handleCriticalError;
-    sigemptyset(&sa_critical.sa_mask);
+    sigfillset(&sa_critical.sa_mask);
     sa_critical.sa_flags = 0;
     
     sigaction(SIGSEGV, &sa_critical, NULL);

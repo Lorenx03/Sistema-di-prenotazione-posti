@@ -33,7 +33,7 @@
 // #define POLL_FD_SIZE 200
 
 #define HTTP_RESPONSE_TEMPLATE "HTTP/1.1 %d %s\r\n" \
-    "Content-Type: text/plain\r\n" \
+    "Content-Type: %s\r\n" \
     "Content-Length: %zu\r\n" \
     "\r\n" \
     "%s"
@@ -103,6 +103,8 @@ HttpRoute *findHttpRoute(HttpRoute *currentNode, char *path);
 
 // Builds an HTTP response with the given status code, message, and body
 void httpResponseBuilder(char *response, int statusCode, const char *statusMessage, const char *responseBody);
+
+void httpResponseBuilderHTML(char *response, int statusCode, const char *statusMessage, const char *responseBody);
 
 // Generates an HTTP error response with the specified error code
 void errorResponse(char *response, int errorCode);
